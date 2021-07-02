@@ -23,7 +23,7 @@ conda config --append envs_dirs /research/projects/$species/$project/conda/
 #Git stuff
 git init
 touch .gitignore
-echo "./raw_data" >>.gitignore
-echo "./data" >>.gitignore
+echo "./raw_data/" >>.gitignore
+echo "./data/" >>.gitignore
 
 git add project_setup.sh
