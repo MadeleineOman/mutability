@@ -25,4 +25,5 @@ git init
 touch .gitignore
 echo "./raw_data" >>.gitignore
 echo "./data" >>.gitignore
+
 git add project_setup.sh
