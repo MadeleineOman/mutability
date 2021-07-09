@@ -17,13 +17,16 @@ cd /research/projects/$species/$project/ #idk why cd here, it's what rbovb dies 
 ln -s  /scratch/projects/$species/$project/data /research/projects/$species/$project/data/
 
 #make the conda env 
-conda create --prefix /research/projects/$species/$project/conda/$project
-conda config --append envs_dirs /research/projects/$species/$project/conda/
+conda create --prefix ~/.conda/envs/$project
 
 #Git stuff
 git init
 touch .gitignore
-echo "./raw_data/" >>.gitignore
-echo "./data/" >>.gitignore
+echo "raw_data/" >>.gitignore
+echo "data/" >>.gitignore
 
 git add project_setup.sh
+
+
+git remote add origin git@github.com:MadeleineOman/mutability
+
