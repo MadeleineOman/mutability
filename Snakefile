@@ -1,15 +1,15 @@
 rule all: 
     input: 
-        "snake_out_test.txt"
+        "data/blood/track_data/DNAse/DNAse_chr1.bed.gz"
     
         
 rule hello:
     output:
-        "snake_out_test.txt"
+        "data/blood/track_data/DNAse/DNAse_chr1.bed.gz"
     message: 
-        "create the output file using a basic notebook"
+        "use the DNAse download and wrangle script"
     conda: 
         "conda_mutability_env.yml"
     shell: 
-        "python snakefile_test.py"
+        "bash analysis/blood/track_data/DNAse/blood_DNAse_downloadWrangle.sh"
 
