@@ -1,0 +1,6 @@
+name: snakeSomMut
+channels:
+  - bioconda
+dependencies:
+  - bedops=2.4.39=h7d875b9_1
+prefix: /home/omanmade/.conda/envs/snakeSomMut
