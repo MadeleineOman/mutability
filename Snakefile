@@ -1,9 +1,20 @@
 rule all: 
     input: 
         "data/blood/track_data/DNAse/DNAse_chr1.bed.gz", "data/blood/track_data/H3k27/H3k27_chr1.bed.gz", 
-        "data/blood/track_data/H3k4me1/H3k4me1_chr1.bed.gz", "data/blood/track_data/H3k4me3/H3k4me3_chr1.bed.gz"
+        "data/blood/track_data/H3k4me1/H3k4me1_chr1.bed.gz", "data/blood/track_data/H3k4me3/H3k4me3_chr1.bed.gz", 
+        "data/global/track_data/laminB1/laminB1_chr1.bed.gz", "data/blood/track_data/transcription/transcription.bed.gz"
     
         
+rule txn_downloadWrangle:
+    output:
+        "data/blood/track_data/transcription/transcription.bed.gz"
+    message: 
+        "use the txn download and wrangle script"
+    conda: 
+        "conda_snakeSomMut_env.yml"
+    shell: 
+        "bash analysis/blood/track_data/transcription/blood_transcription_downloadWrangle.sh"
+
 rule DNAse_downloadWrangle:
     output:
         "data/blood/track_data/DNAse/DNAse_chr1.bed.gz"
@@ -45,3 +56,14 @@ rule H3k4me3_downloadWrangle:
         "conda_snakeSomMut_env.yml"
     shell: 
         "bash analysis/blood/track_data/H3k4me3/blood_H3k4me3_downloadWrangle.sh"
+        
+        
+rule laminB1_downloadWrangle:
+    output:
+        "data/global/track_data/laminB1/laminB1_chr1.bed.gz"
+    message: 
+        "use the laminB1 download and wrangle script"
+    conda: 
+        "conda_snakeSomMut_env.yml"
+    shell: 
+        "bash analysis/global/track_data/laminB1/global_laminB1_downloadWrangle.sh"
