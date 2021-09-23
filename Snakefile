@@ -3,9 +3,19 @@ rule all:
         "data/blood/track_data/DNAse/DNAse_chr1.bed.gz", "data/blood/track_data/H3k27/H3k27_chr1.bed.gz", 
         "data/blood/track_data/H3k4me1/H3k4me1_chr1.bed.gz", "data/blood/track_data/H3k4me3/H3k4me3_chr1.bed.gz", 
         "data/global/track_data/laminB1/laminB1_chr1.bed.gz", "data/blood/track_data/transcription/transcription.bed.gz", 
-        "data/global/track_data/replication/replication.bed.gz"
+        "data/global/track_data/replication/replication.bed.gz", "data/global/track_data/recombination/recombination.bed.gz"
     
 
+rule recombination_downloadWrangle:
+    output:
+        "data/global/track_data/recombination/recombination.bed.gz"
+    message: 
+        "use the recombination download and wrangle script"
+    conda: 
+        "conda_snakeSomMut_env.yml"
+    shell: 
+        "bash analysis/global/track_data/recombination/global_recombination_downloadWrangle.sh"
+        
 rule replication_downloadWrangle:
     output:
         "data/global/track_data/replication/replication.bed.gz"
