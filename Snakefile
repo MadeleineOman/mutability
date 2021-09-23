@@ -2,9 +2,21 @@ rule all:
     input: 
         "data/blood/track_data/DNAse/DNAse_chr1.bed.gz", "data/blood/track_data/H3k27/H3k27_chr1.bed.gz", 
         "data/blood/track_data/H3k4me1/H3k4me1_chr1.bed.gz", "data/blood/track_data/H3k4me3/H3k4me3_chr1.bed.gz", 
-        "data/global/track_data/laminB1/laminB1_chr1.bed.gz", "data/blood/track_data/transcription/transcription.bed.gz"
+        "data/global/track_data/laminB1/laminB1_chr1.bed.gz", "data/blood/track_data/transcription/transcription.bed.gz", 
+        "data/global/track_data/replication/replication.bed.gz"
     
-        
+
+rule replication_downloadWrangle:
+    output:
+        "data/global/track_data/replication/replication.bed.gz"
+    message: 
+        "use the replication download and wrangle script"
+    conda: 
+        "conda_snakeSomMut_env.yml"
+    shell: 
+        "bash analysis/global/track_data/replication/global_replication_downloadWrangle.sh"
+
+
 rule txn_downloadWrangle:
     output:
         "data/blood/track_data/transcription/transcription.bed.gz"
