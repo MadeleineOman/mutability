@@ -4,9 +4,43 @@ rule all:
         "data/blood/track_data/H3k4me1/H3k4me1_chr1.bed.gz", "data/blood/track_data/H3k4me3/H3k4me3_chr1.bed.gz", 
         "data/global/track_data/laminB1/laminB1_chr1.bed.gz", "data/blood/track_data/transcription/transcription.bed.gz", 
         "data/global/track_data/replication/replication.bed.gz", "data/global/track_data/recombination/recombination.bed.gz", 
-        "data/global/track_data/phastcons/phastcons_chr1.bed.gz", 
-         "data/global/sequence/chr1.fa.gz", "data/global/track_data/repeats/repeats.bed.gz"
+        "data/global/track_data/phastcons/phastcons_chr1.bed.gz", "data/global/track_data/repeats/repeats.bed.gz",
+         "data/global/sequence/chr1.fa.gz", "data/blood/mutations/blood_mutations_hg18_sorted.bed.gz"
     
+rule mut_download:
+    input: 
+        "analysis/blood/mutations/DSMNC_list_all_files_blood.csv"
+    output:
+        "data/blood/mutations/all_blood_mutations.txt"
+    message: 
+        "use the ownlaod wrangle and test the blood mutations"
+    shell: 
+        "bash analysis/blood/mutations/blood_mutations_download.sh" 
+
+rule mut_prepareLiftover:
+    input: 
+         "data/blood/mutations/all_blood_mutations.txt"
+    output:
+        "data/blood/mutations/all_blood_mutations_rearrangedFroLiftover.bed"
+    message: 
+        "use the python script to prepare the blood mutations file for liftover"
+    shell: 
+        "python analysis/blood/mutations/blood_mutations_convert_to_bed.py"
+        
+rule mut_liftoverTabix:
+    input: 
+        "data/blood/mutations/all_blood_mutations_rearrangedFroLiftover.bed"
+    output:
+        "data/blood/mutations/blood_mutations_hg18_sorted.bed.gz"
+    conda: 
+        "conda_snakeSomMut_env.yml"
+    message: 
+        "use script to liftover and tabix. then oython script to tets mutations"
+    shell: 
+        "bash analysis/blood/mutations/blood_mutations_liftover_tabix.sh; "
+        "zgrep 'chr3' data/blood/mutations/blood_mutations_hg18_sorted.bed.gz > data/blood/mutations/test_chr3_muts_hg18.bed; "
+        "python analysis/blood/mutations/blood_mutations_testing.py"
+
 
 rule seq_download:
     output:
@@ -16,8 +50,7 @@ rule seq_download:
     conda: 
         "conda_snakeSomMut_env.yml"
     shell: 
-        "bash analysis/global/sequence/download_sequence.sh; "
-        "echo hello"
+        "bash analysis/global/sequence/download_sequence.sh"
 
 rule methylation_downloadWrangle:
     output:

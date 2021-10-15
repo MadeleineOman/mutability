@@ -29,6 +29,16 @@ analysis/global/track_data/phastcons/ReadMe_Phast.ipynb
 analysis/global/track_data/repeats/Read_ME.ipynb
 analysis/global/track_data/repeats/global_repeats_downloadWrangle.ipynb
 
+analysis/blood/mutations/DSMNC_list_all_files_2021_06_15.csv
+analysis/blood/mutations/blood_filesnamesOnly.txt
+analysis/blood/mutations/blood_filesnamesOnly_noAnnoyingStratChar.txt
+analysis/blood/mutations/blood_mutations_downloadWrangle.ipynb
+analysis/blood/mutations/hg19_seq/
+analysis/blood/mutations/test_chr1_muts.bed
+analysis/blood/mutations/test_chr1_muts_hg19.bed
+analysis/blood/mutations/test_chr3_muts_hg18.bed
+analysis/blood/mutations/untitled.ipynb
+
 analysis_o/
 data
 data_o/
