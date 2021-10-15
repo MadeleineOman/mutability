@@ -4,8 +4,40 @@ rule all:
         "data/blood/track_data/H3k4me1/H3k4me1_chr1.bed.gz", "data/blood/track_data/H3k4me3/H3k4me3_chr1.bed.gz", 
         "data/global/track_data/laminB1/laminB1_chr1.bed.gz", "data/blood/track_data/transcription/transcription.bed.gz", 
         "data/global/track_data/replication/replication.bed.gz", "data/global/track_data/recombination/recombination.bed.gz", 
-        "data/global/track_data/phastcons/phastcons_chr1.bed.gz"
+        "data/global/track_data/phastcons/phastcons_chr1.bed.gz", 
+         "data/global/sequence/chr1.fa.gz", "data/global/track_data/repeats/repeats.bed.gz"
     
+
+rule seq_download:
+    output:
+        "data/global/sequence/chr1.fa.gz"
+    message: 
+        "use the hg18 seq download script"
+    conda: 
+        "conda_snakeSomMut_env.yml"
+    shell: 
+        "bash analysis/global/sequence/download_sequence.sh; "
+        "echo hello"
+
+rule methylation_downloadWrangle:
+    output:
+        "data/blood/track_data/methylation/methylation_CHG.bed.gz"
+    message: 
+        "use the blood methylation download and wrangle script"
+    conda: 
+        "conda_snakeSomMut_env.yml"
+    shell: 
+        "bash analysis/blood/track_data/methylation/blood_methylation_downloadWrangle.sh"
+
+rule repeats_downloadWrangle:
+    output:
+        "data/global/track_data/repeats/repeats.bed.gz"
+    message: 
+        "use the repeats download and wrangle script"
+    conda: 
+        "conda_snakeSomMut_env.yml"
+    shell: 
+        "bash analysis/global/track_data/repeats/global_repeats_downloadWrangle.sh"
 
 rule phastcons_downloadWrangle:
     output:

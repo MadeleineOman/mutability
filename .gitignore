@@ -24,6 +24,11 @@ analysis/global/track_data/recombination/ReadMe_Hapmap.ipynb
 
 analysis/global/track_data/replication/.ipynb_checkpoints/
 
+analysis/global/track_data/phastcons/ReadMe_Phast.ipynb
+
+analysis/global/track_data/repeats/Read_ME.ipynb
+analysis/global/track_data/repeats/global_repeats_downloadWrangle.ipynb
+
 analysis_o/
 data
 data_o/
