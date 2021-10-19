@@ -5,7 +5,7 @@ rule all:
         "data/global/track_data/laminB1/laminB1_chr1.bed.gz", "data/blood/track_data/transcription/transcription.bed.gz", 
         "data/global/track_data/replication/replication.bed.gz", "data/global/track_data/recombination/recombination.bed.gz", 
         "data/global/track_data/phastcons/phastcons_chr1.bed.gz", "data/global/track_data/repeats/repeats.bed.gz",
-         "data/global/sequence/chr1.fa.gz", "data/blood/mutations/blood_mutations_hg18_sorted.bed.gz"
+         "data/global/sequence/chr1.fa.gz", "data/blood/mutations/blood_mutations_hg18_sorted.bed"
     
 rule mut_download:
     input: 
@@ -27,18 +27,18 @@ rule mut_prepareLiftover:
     shell: 
         "python analysis/blood/mutations/blood_mutations_convert_to_bed.py"
         
-rule mut_liftoverTabix:
+rule mut_liftoverSort:
     input: 
         "data/blood/mutations/all_blood_mutations_rearrangedFroLiftover.bed"
     output:
-        "data/blood/mutations/blood_mutations_hg18_sorted.bed.gz"
+        "data/blood/mutations/blood_mutations_hg18_sorted.bed"
     conda: 
         "conda_snakeSomMut_env.yml"
     message: 
-        "use script to liftover and tabix. then oython script to tets mutations"
+        "use script to liftover and sort. then oython script to tets mutations"
     shell: 
-        "bash analysis/blood/mutations/blood_mutations_liftover_tabix.sh; "
-        "zgrep 'chr3' data/blood/mutations/blood_mutations_hg18_sorted.bed.gz > data/blood/mutations/test_chr3_muts_hg18.bed; "
+        "bash analysis/blood/mutations/blood_mutations_liftoverSort.sh; "
+        "grep 'chr3' data/blood/mutations/blood_mutations_hg18_sorted.bed > data/blood/mutations/test_chr3_muts_hg18.bed; "
         "python analysis/blood/mutations/blood_mutations_testing.py"
 
 

@@ -4,7 +4,3 @@ data/applications/UCSC_genomeBrowser_Blat/liftOver data/blood/mutations/all_bloo
 
 #sort 
 sort -k1,1 -k2,2n data/blood/mutations/blood_mutations_hg18.bed > data/blood/mutations/blood_mutations_hg18_sorted.bed
-
-#bgzip and tabix 
-bgzip data/blood/mutations/blood_mutations_hg18_sorted.bed
-tabix -p bed -f data/blood/mutations/blood_mutations_hg18_sorted.bed.gz

@@ -1,6 +1,9 @@
 name: snakeSomMut
 channels:
   - bioconda
+  - anaconda
 dependencies:
   - bedops=2.4.39=h7d875b9_1
+  - htslib=1.13
+  - biopython=1.78
 prefix: /home/omanmade/.conda/envs/snakeSomMut
