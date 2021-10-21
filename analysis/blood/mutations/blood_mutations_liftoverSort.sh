@@ -4,3 +4,6 @@ data/applications/UCSC_genomeBrowser_Blat/liftOver data/blood/mutations/all_bloo
 
 #sort 
 sort -k1,1 -k2,2n data/blood/mutations/blood_mutations_hg18.bed > data/blood/mutations/blood_mutations_hg18_sorted.bed
+
+#return to tab delimited 
+sed 's/|/\t/g' data/blood/mutations/blood_mutations_hg18_sorted.bed > data/blood/mutations/blood_mutations_hg18_sorted_tabdelim.bed
