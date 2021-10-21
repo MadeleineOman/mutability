@@ -2,12 +2,30 @@ rule all:
     input: 
         "data/blood/track_data/DNAse/DNAse_chr1.bed.gz", "data/blood/track_data/H3k27/H3k27_chr1.bed.gz", 
         "data/blood/track_data/H3k4me1/H3k4me1_chr1.bed.gz", "data/blood/track_data/H3k4me3/H3k4me3_chr1.bed.gz", 
-        "data/global/track_data/laminB1/laminB1_chr1.bed.gz", "data/blood/track_data/transcription/transcription.bed.gz", 
-        "data/global/track_data/replication/replication.bed.gz", "data/global/track_data/recombination/recombination.bed.gz", 
-        "data/global/track_data/phastcons/phastcons_chr1.bed.gz", "data/global/track_data/repeats/repeats.bed.gz",
-         "data/global/sequence/chr1.fa.gz", "data/blood/mutations/blood_mutations_hg18_sorted.bed"
+         "data/blood/track_data/transcription/transcription.bed.gz", "data/blood/mutations/blood_mutations_hg18_sorted_tabdelim.bed",
+          
+         "data/global/sequence/chr1.fa.gz",  
+         "data/global/track_data/laminB1/laminB1_chr1.bed.gz", "data/global/track_data/replication/replication.bed.gz",
+         "data/global/track_data/recombination/recombination.bed.gz","data/global/track_data/phastcons/phastcons_chr1.bed.gz",
+         "data/global/track_data/repeats/repeats.bed.gz",
+         
+         "data/germline/track_data/transcription/transcription_male_hg18_sorted.bed.gz",
+         "data/germline/track_data/transcription/transcription_female_hg18_sorted.bed.gz"
+         
+         
     
-rule mut_download:
+
+rule germline_txn_download:
+    output:
+        "data/germline/track_data/transcription/transcription_male_hg18_sorted.bed.gz",
+        "data/germline/track_data/transcription/transcription_female_hg18_sorted.bed.gz"
+    message: 
+        "use the ownlaod wrangle for germline"
+    shell: 
+        "bash analysis/germline/track_data/transcription/germline_transcription_downloadWrangle.sh" 
+
+
+rule blood_mut_download:
     input: 
         "analysis/blood/mutations/DSMNC_list_all_files_blood.csv"
     output:
@@ -17,7 +35,7 @@ rule mut_download:
     shell: 
         "bash analysis/blood/mutations/blood_mutations_download.sh" 
 
-rule mut_prepareLiftover:
+rule blood_mut_prepareLiftover:
     input: 
          "data/blood/mutations/all_blood_mutations.txt"
     output:
@@ -27,11 +45,11 @@ rule mut_prepareLiftover:
     shell: 
         "python analysis/blood/mutations/blood_mutations_convert_to_bed.py"
         
-rule mut_liftoverSort:
+rule blood_mut_liftoverSort:
     input: 
         "data/blood/mutations/all_blood_mutations_rearrangedFroLiftover.bed"
     output:
-        "data/blood/mutations/blood_mutations_hg18_sorted.bed"
+        "data/blood/mutations/blood_mutations_hg18_sorted_tabdelim.bed"
     conda: 
         "conda_snakeSomMut_env.yml"
     message: 
@@ -52,7 +70,7 @@ rule seq_download:
     shell: 
         "bash analysis/global/sequence/download_sequence.sh"
 
-rule methylation_downloadWrangle:
+rule blood_methylation_downloadWrangle:
     output:
         "data/blood/track_data/methylation/methylation_CHG.bed.gz"
     message: 
@@ -103,7 +121,7 @@ rule replication_downloadWrangle:
         "bash analysis/global/track_data/replication/global_replication_downloadWrangle.sh"
 
 
-rule txn_downloadWrangle:
+rule blood_txn_downloadWrangle:
     output:
         "data/blood/track_data/transcription/transcription.bed.gz"
     message: 
@@ -113,7 +131,7 @@ rule txn_downloadWrangle:
     shell: 
         "bash analysis/blood/track_data/transcription/blood_transcription_downloadWrangle.sh"
 
-rule DNAse_downloadWrangle:
+rule blood_DNAse_downloadWrangle:
     output:
         "data/blood/track_data/DNAse/DNAse_chr1.bed.gz"
     message: 
@@ -124,7 +142,7 @@ rule DNAse_downloadWrangle:
         "bash analysis/blood/track_data/DNAse/blood_DNAse_downloadWrangle.sh"
         
         
-rule H3k27_downloadWrangle:
+rule blood_H3k27_downloadWrangle:
     output:
         "data/blood/track_data/H3k27/H3k27_chr1.bed.gz"
     message: 
@@ -135,7 +153,7 @@ rule H3k27_downloadWrangle:
         "bash analysis/blood/track_data/H3k27/blood_H3k27_downloadWrangle.sh"
 
 
-rule H3k4me1_downloadWrangle:
+rule blood_H3k4me1_downloadWrangle:
     output:
         "data/blood/track_data/H3k4me1/H3k4me1_chr1.bed.gz"
     message: 
@@ -145,7 +163,7 @@ rule H3k4me1_downloadWrangle:
     shell: 
         "bash analysis/blood/track_data/H3k4me1/blood_H3k4me1_downloadWrangle.sh"
         
-rule H3k4me3_downloadWrangle:
+rule blood_H3k4me3_downloadWrangle:
     output:
         "data/blood/track_data/H3k4me3/H3k4me3_chr1.bed.gz"
     message: 
