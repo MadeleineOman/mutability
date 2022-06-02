@@ -1,0 +1,7 @@
+name: Rplotting
+channels:
+  - conda-forge
+dependencies:
+  - r-ggplot2=3.3.5
+  - r-stringr=1.4.0
+prefix: /home/omanmade/.conda/envs/Rplotting
