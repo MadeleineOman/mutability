@@ -3,11 +3,9 @@ import random
 import pandas as pd
 import numpy as np 
 from numpy.random import choice
-import matplotlib.pyplot as plt
 import collections
 from Bio import AlignIO
 import pysam 
-from tqdm import tqdm 
 from datetime import datetime
 import gzip
 import multiprocessing
@@ -21,19 +19,19 @@ import json
 # command line input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tissue = sys.argv[1]
-# tissue = "blood"
+# tissue = "liver"
 model_desc = sys.argv[2]
 # model_desc = "model2"
 list_of_surrounding_contexts = json.loads(sys.argv[3]) #note if you chnagee/ increase this, then you oncrese the buffer zone (not using sites in the buffer, len(dna)-max_distance )
 # list_of_surrounding_contexts = [1,100,10000]
 
 if tissue == "germline": 
-    mutations_lines = open('../../../data/germline/mutation_data/mutations_hg18_final.bed').readlines()
-    mutations_df = pd.read_table('../../../data/germline/mutation_data/mutations_hg18_final.bed',sep="\t",header = None)
+    mutations_lines = open('data/germline/mutation_data/mutations_hg18_final.bed').readlines()
+    mutations_df = pd.read_table('data/germline/mutation_data/mutations_hg18_final.bed',sep="\t",header = None)
     mutations_df.columns = ["chromosome","start","fake_end","ref","alt","Fathers_age_at_conception","Mothers_age_at_conception"]
-elif tissue == "blood": 
-    mutations_lines = open('../../../data/blood/mutations/blood_mutations.bed').readlines()
-    mutations_df = pd.read_table('../../../data/blood/mutations/blood_mutations.bed',sep="\t",header = None)
+elif tissue in ["blood","liver","skin"]:
+    mutations_lines = open('data/{t}/mutations/mutations.bed'.format(t=tissue)).readlines()
+    mutations_df = pd.read_table('data/{t}/mutations/mutations.bed'.format(t=tissue),sep="\t",header = None)
     mutations_df.columns = ["chromosome","start","fake_end","ref","alt","ID","VAF","Gene name", "Region", "AA", "COSMIC", "Species", "Gender", "Age_in_years",           
                             "Tissue/Cell type","Single-cell_genomics_biotechnology_or_Method","Control_sample_or_tissue"]
 else: 
@@ -42,7 +40,7 @@ else:
     
 
 #dictionry where i specify which col contains the information in the datafile , 0 indexed 
-tracksColFile_dict = json.load(open("../../../data/{t}/objects/{m}/tracksColDict.txt".format(m=model_desc,t=tissue)))#  
+tracksColFile_dict = json.load(open("data/{t}/objects/{m}/tracksColDict.txt".format(m=model_desc,t=tissue)))#  
 
 
 #mutant sites ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,7 +80,7 @@ error_log+=("number included mutations = "+str(len(sites))+"\n")
 #non -mutant sites ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #get chrom length information so I can perform weighted choice for non-mut site selection 
-ChromLengths = pd.read_csv('../../../data/global/sequence/hg38_chromosomelengths.csv') #read in the csv file of hg38 chrom lengths I found on the internets 
+ChromLengths = pd.read_csv('data/global/sequence/hg38_chromosomelengths.csv') #read in the csv file of hg38 chrom lengths I found on the internets 
 total_length=0 #lets sum (get the total length) 
 for length in list(ChromLengths.Length): 
     total_length+=int(length.replace(",",""))
@@ -123,27 +121,29 @@ distance_max = max(list_of_surrounding_contexts)
 
 fastas_dict = {}   # creating dictionary with fasta alignment, length of seq, 
 print("making the fastas dictionary")
-for chrom in tqdm(list_chroms):
-    filename_tmp = "../../../data/global/sequence/{c}.fa.gz".format(c=chrom)
+for chrom in (list_chroms):
+    filename_tmp = "data/global/sequence/{c}.fa.gz".format(c=chrom)
     fastas_dict[chrom] = []
     with gzip.open(filename_tmp, "rt") as handle:
         fastas_dict[chrom].append(AlignIO.read(handle,"fasta"))
         alignment_tmp = fastas_dict[chrom][0]
         fastas_dict[chrom].append(len(str(alignment_tmp[0].seq)))
-
+print("done with fastas dict")
                  
 #generate header ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
 
 header = "Chromosome"+ "\t"+"site"+"\t" +"triplet"+"\t"+"mutation_status"                        # creating the begining of the header 
-for trackname in tracksColFile_dict.keys():                                                     # the rest of the header is a function of tracks 
-    for distance in list_of_surrounding_contexts:                                                # and distance (need a col for every track and for every distance value within ) 
-        header = header + "\t"+str(trackname)+"-"+str(distance)
+for trackname in tracksColFile_dict.keys():   # the rest of the header is a function of tracks 
+    if trackname == "annotation": 
+        header = header + "\t"+str(trackname)
+    else: 
+        for distance in list_of_surrounding_contexts:                                                # and distance (need a col for every track and for every distance value within ) 
+            header = header + "\t"+str(trackname)+"-"+str(distance)
 for distance in list_of_surrounding_contexts:                                                    # creating the end of the header assoc with no track (the seqeunce at different 
     header = header + "\t"+"Apercent-"+str(distance)+ "\t"+"Gpercent-"+str(distance)+ "\t"+"Cpercent-"+str(distance)+ "\t"+"Tpercent-"+str(distance)   # distace values) 
 header = header +"\n"                                                                            # obviously needs to end with a \n 
 
-timestamp = datetime.now().strftime("%Y/%m/%d").replace("/", "_").replace(":", "_")
-filename = '../../../data/{a}/dataframes/{m}/predictorDf_{t}.txt'.format(a=tissue,t=timestamp,m=model_desc)
+filename = 'data/{a}/dataframes/{m}/predictorDf.txt'.format(a=tissue,m=model_desc)
 with open(filename,"w") as f: 
     f.write(header)       
     
@@ -256,14 +256,14 @@ def predictor_rowString(site):
 def rowString_handler():
     p = multiprocessing.Pool(10)
     with open(filename, 'a') as f:
-        for result in p.imap(predictor_rowString, sites[0:100]):
+        for result in p.imap(predictor_rowString, sites):
             f.write('%s\n' % result)
 
 if __name__=='__main__':
     rowString_handler()
 
 #writing error log to file 
-with open("../../../data/{a}/dataframes/{m}/predictorDf_{t}_errorlog.txt".format(a=tissue,t=timestamp,m=model_desc),"w") as f: 
+with open("data/{a}/dataframes/{m}/predictorDf_errorlog.txt".format(a=tissue,m=model_desc),"w") as f: 
       f.write(error_log)
      
 
