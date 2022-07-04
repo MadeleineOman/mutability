@@ -2,11 +2,24 @@ tissues = ["skin","blood","liver","germline"]
 
 rule all: 
     input: 
-        #LIVER FILES
-        "data/liver/dataframes/model2/predictorDf.txt",
-        "analysis/liver/plots/model2/scatter_liver_on_liver.pdf",
-        "data/liver/objects/model2/liver_model.RData",
+        #ANALYSIS FILES         
+        "analysis/liver/plots/model3/scatter_liver_on_liver.pdf",
+        "analysis/germline/plots/model3/scatter_germline_on_germline.pdf",
+        #"analysis/blood/plots/model3/scatter_blood_on_blood.pdf",
+        "analysis/skin/plots/model3/scatter_skin_on_skin.pdf",
         
+        #"analysis/skin/plots/model3/scatter_skin_on_blood.pdf",
+        #"analysis/skin/plots/model3/scatter_skin_on_germline.pdf",
+        #"analysis/blood/plots/model3/scatter_blood_on_skin.pdf",
+        #"analysis/blood/plots/model3/scatter_blood_on_germline.pdf",
+        "analysis/germline/plots/model3/scatter_germline_on_skin.pdf",
+        "analysis/germline/plots/model3/scatter_germline_on_blood.pdf",
+        
+        "analysis/global/plots/model3/coefScatter_blood_on_skin.pdf",
+        "analysis/global/plots/model3/coefScatter_blood_on_germline.pdf",
+        "analysis/global/plots/model3/coefScatter_germline_on_skin.pdf",
+        
+        #LIVER TRACK FILES     
         "data/liver/track_data/H3k4me1/H3k4me1.bed.gz",
         "data/liver/track_data/H3k4me3/H3k4me3.bed.gz",
         "data/liver/track_data/H3k27ac/H3k27ac.bed.gz",
@@ -14,25 +27,15 @@ rule all:
         "data/liver/track_data/DNAse/DNAse.bed.gz",
         "data/liver/track_data/transcription/transcription.bed.gz",        
     
-        #SKIN FILES 
-        #"data/skin/dataframes/model2/predictorDf.txt",
-        #"analysis/skin/plots/model2/scatter_skin_on_skin.pdf",
-        #"data/skin/dataframes/model2/skin_on_skin_ProbabilityDf.csv",
+        #SKIN TRACK FILES 
+
         
-        #GERMLINE FILES 
-        "data/germline/dataframes/model2/predictorDf.txt",
-        #"data/germline/dataframes/model2/germline_on_germline_ProbabilityDf.csv",
-        #"analysis/germline/plots/model2/scatter_germline_on_germline.pdf",
-        
+        #GERMLINE TRACK FILES 
         "data/germline/track_data/transcription/transcription_male_hg18_sorted.bed.gz",
         "data/germline/track_data/DNAse/DNAse_male_hg18_sorted.bed.gz",
         "data/germline/track_data/H3k27/H3k27ac_male_hg18_sorted.bed.gz",
             
-        #BLOOD FILES 
-        "data/blood/dataframes/model2/predictorDf.txt",
-        "data/blood/dataframes/model2/blood_on_blood_ProbabilityDf.csv",
-        #"analysis/blood/plots/model2/scatter_blood_on_blood.pdf",
-        
+        #BLOOD TRACK FILES 
         #"data/blood/mutations/blood_mutations_hg18_sorted_tabdelim.bed",
         "data/blood/track_data/DNAse/DNAse.bed.gz", 
         "data/blood/track_data/H3k27ac/H3k27ac.bed.gz", 
@@ -61,6 +64,32 @@ rule all:
 
 #ANALYSIS RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+rule plotting_coef: 
+    input: "data/{tissue}/dataframes/{model}/{tissue}_coefDF.csv",
+           #"data/{tissue_predOn}/dataframes/{model}/{tissue_predOn}_coefDF.csv"
+    output: "analysis/global/plots/{model}/coefScatter_{tissue}_on_{tissue_predOn}.pdf"
+    conda: "conda_Rplotting.yml"
+    shell: "Rscript --vanilla analysis/modules/plotting_coef/plotting_coef.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}"  
+
+rule plotting_scatter: 
+    input: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
+    output: "analysis/{tissue}/plots/{model}/scatter_{tissue}_on_{tissue_predOn}.pdf"
+    conda: "conda_Rplotting.yml"
+    shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 400 {wildcards.tissue} {wildcards.tissue_predOn}"   
+
+rule predict: 
+    input: "data/{tissue}/objects/{model}/{tissue}_model.RData"
+    output: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/predict.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}"
+
+rule createModel: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/objects/{model}/{tissue}_model.RData",
+           "data/{tissue}/dataframes/{model}/{tissue}_coefDF.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_model.R {wildcards.tissue} {wildcards.model}"
+
 rule createDF: 
     output: "data/{tissue}/dataframes/model2/predictorDf.txt"
     threads: 10
@@ -70,25 +99,6 @@ rule createDF:
         "grep 'discord' data/{wildcards.tissue}/dataframes/model2/predictorDf.txt >> data/liver/dataframes/model2/predictorDf_errorlog.txt;"
         "grep -v 'discord' data/{wildcards.tissue}/dataframes/model2/predictorDf.txt > data/{wildcards.tissue}/dataframes/model2/predictorDf_noDiscord.txt;"
         "grep -v 'buffer' data/{wildcards.tissue}/dataframes/model2/predictorDf_noDiscord.txt >  data/{wildcards.tissue}/dataframes/model2/predictorDf.txt"
-
-rule createModel: 
-    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
-    output:"data/{tissue}/objects/{model}/{tissue}_model.RData"
-    conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/create_model.R {wildcards.tissue} {wildcards.model}"
-
-rule predict: 
-    input: "data/{tissue}/objects/{model}/{tissue}_model.RData"
-    output: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
-    conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/predict.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}"
-
-rule plotting: 
-    input: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue}_ProbabilityDf.csv"
-    output: "analysis/{tissue}/plots/{model}/scatter_{tissue}_on_{tissue_predOn}.pdf"
-    conda: "conda_Rplotting.yml"
-    shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 400 {wildcards.tissue} {wildcards.tissue_predOn}"    
-
 
 #LIVER TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
