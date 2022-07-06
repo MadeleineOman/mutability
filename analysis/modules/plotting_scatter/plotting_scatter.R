@@ -3,12 +3,11 @@ model_name = args[1]
 bin_size_desiredMin = as.integer(args[2])
 tissue = args[3]
 tissue_predOn = args[4]
-# tissue  = "skin"
-# tissue_predOn = "skin"
-# model_name = "model2"
+# tissue  = "germline"
+# tissue_predOn = "germline"
+# model_name = "model3"
 # bin_size_desiredMin = 400
-# prob_df_file_name = "skin_on_skin_ProbabilityDf_fromFile_predictorDf_2022_04_04_complete.txt.csv"
-# tmp_pathToFiles = "../../../"
+tmp_pathToFiles = ""
 
 library(ggplot2)
 library(stringr)
@@ -20,9 +19,9 @@ library(stringr)
 # tissue_predOn = str_remove(tissue_predOn, "on_")
 
 #improting the files 
-prob_df_file_path = paste("data/",tissue,"/dataframes/",model_name,"/",tissue,"_on_",tissue_predOn,"_ProbabilityDf.csv",sep="")
+prob_df_file_path = paste(tmp_pathToFiles,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_on_",tissue_predOn,"_ProbabilityDf.csv",sep="")
 probs_df <- read.csv(prob_df_file_path)
-error_output_file = paste("analysis/",tissue,"/plots/",model_name,"/",tissue,"_on_",tissue_predOn,"_createPlot_textOutput.txt",sep="")
+error_output_file = paste(tmp_pathToFiles,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_on_",tissue_predOn,"_createPlot_textOutput.txt",sep="")
 
 #sorting df by proabbility 
 probs_df_sorted <- probs_df[order(probs_df$glm_probs, decreasing = FALSE),]
@@ -85,7 +84,7 @@ ggplot(plotting_df, aes(x=average_predicted_probs, y=average_proportion_mutation
     geom_errorbarh(plotting_df, mapping=aes(xmin=stderr_lower, xmax =stderr_upper, y = average_proportion_mutations))+
     ggtitle(paste(tissue,"model on",tissue_predOn,sep=" ")) +
     theme(plot.title = element_text(size = 30, face = "bold",hjust = 0.5))
-filename = paste("analysis/",tissue,"/plots/",model_name,"/scatter_",tissue,"_on_",tissue_predOn, ".pdf",sep="")
+filename = paste(tmp_pathToFiles,"analysis/",tissue,"/plots/",model_name,"/scatter_",tissue,"_on_",tissue_predOn, ".pdf",sep="")
 ggsave(filename)
 
 #printing some information to file 
