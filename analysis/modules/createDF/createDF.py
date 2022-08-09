@@ -24,7 +24,7 @@ tmp_file_dir =""
 # command line input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tissue = sys.argv[1]
-# tissue = "liver"
+# tissue = "skin"
 model_desc = sys.argv[2]
 # model_desc = "model4"
 list_of_surrounding_contexts = json.loads(sys.argv[3]) #note if you chnagee/ increase this, then you oncrese the buffer zone (not using sites in the buffer, len(dna)-max_distance )
@@ -149,19 +149,17 @@ for distance in list_of_surrounding_contexts:                                   
 header = header +"\n"                                                                            # obviously needs to end with a \n 
 
 
-filename = tmp_file_dir+'data/{a}/dataframes/{m}/predictorDf.txt'.format(a=tissue,m=model_desc)
-with open(filename,"w") as f: 
+filename_df = tmp_file_dir+'data/{a}/dataframes/{m}/predictorDf.txt'.format(a=tissue,m=model_desc)
+with open(filename_df,"w") as f: 
     f.write(header)       
     
-
-
 # big function ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def predictor_rowString(site): 
 # site = sites[52429]
+# for site in tqdm(sites[0:100]):
     row = []
     if site[1] <= distance_max or site[1]+distance_max >= fastas_dict[site[0]][1]:               # only use sites that will have values for site +- max distance (buffer). second element in fastas dict is the length 
         row.extend([str(site),"out of buffer range"])
-
 
     else: 
         row.extend([site[0], site[1]])
@@ -213,6 +211,39 @@ def predictor_rowString(site):
                 if [record for record in pysam.Tabixfile(filename).fetch(site[0], site[1], site[1]+1)]: row.append("island")
                 elif closest_val.shortest_distance(site,filename) <= 2000: row.append("shore")
                 else: row.append("not")
+            elif trackname == "methylation": 
+                list_Cs_notInMethyl_data = []
+                for distance in list_of_surrounding_contexts: 
+                    num_reads_list = []
+                    percent_methy_list = []
+                    track_output = [record for record in pysam.Tabixfile(filename).fetch(site[0], site[1]-distance, site[1]+1+distance)]
+                    if track_output: 
+                        if distance in [0,1]: 
+                            record_pres = False
+                            next_door = False
+                            for record in track_output: 
+                                if int(record.split("\t")[1]) == site[1]: 
+                                    record_pres =True
+                                    num_reads_at_site,percent_methylated = record.split("|")[6:8]
+                                    if int(num_reads_at_site)>=10: 
+                                        percent_methy_list.append(int(percent_methylated))
+                                elif int(record.split("\t")[1]) in [site[1]-1,site[1]+1]: next_door = True
+                            if not record_pres and next_door==False: #the track_output is empty
+#                                 row.append("weirdness")
+                                error_log += (("methylation track output empty",site[0]," ",str(site[1]),"\n"))
+                        else: 
+                            for record in track_output:
+                                num_reads_at_site,percent_methylated = record.split("|")[6:8]
+                                if int(num_reads_at_site) >=10 :
+                                    percent_methy_list.append(int(percent_methylated))
+                        if len(percent_methy_list) == 0: 
+                            row.append("noCoverage")
+                        else: 
+                            row.append(np.mean(percent_methy_list))
+                    else: 
+                        if alignment[0][site[1]].upper() == "C": 
+                            list_Cs_notInMethyl_data.append(site)
+                        row.append("no_data")
             else: 
                 for distance in list_of_surrounding_contexts: 
                     if not [record for record in pysam.Tabixfile(filename).fetch(site[0], site[1]-distance, site[1]+distance+1)]:                #if no value at that site 
@@ -237,7 +268,7 @@ def predictor_rowString(site):
                         elif tracksColFile_dict[trackname][0] == 'binary': 
                             row.append(len(track_output))
                         else: 
-                            error_log += ((str(site)+" ERROR: track coloumns not 4 or 5 or binary: "+trackname+"\n"))
+                            row.append(((str(site)+" ERROR: track coloumns not 4 or 5 or binary: "+trackname)))
 
         #sequence stuff                
         for distance in list_of_surrounding_contexts: 
@@ -265,20 +296,20 @@ def predictor_rowString(site):
     return row_string
 
 #WRITE THE MODEL #
+filename_df = tmp_file_dir+'data/{a}/dataframes/{m}/predictorDf.txt'.format(a=tissue,m=model_desc)
 start_time = time.time()
 print(tissue,"starting big loop")
 def rowString_handler():
     p = multiprocessing.Pool(10)
-    with open(filename, 'a') as f:
-        for result in p.imap(predictor_rowString, sites[0:100]):
+    with open(filename_df, 'a') as f:
+        for result in p.imap(predictor_rowString, sites):
             f.write('%s\n' % result)
 
 if __name__=='__main__':
     rowString_handler()
-    
+
 error_log += (("creating the df loop took "+str(time.time()-start_time)[0:4]+" seconds\n"))
 
 #writing error log to file 
 with open(tmp_file_dir+"data/{a}/dataframes/{m}/predictorDf_errorlog.txt".format(a=tissue,m=model_desc),"w") as f: 
       f.write(error_log)
-     
