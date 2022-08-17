@@ -7,8 +7,8 @@ library(rlang)
 args = commandArgs(trailingOnly=TRUE)
 tissue = args[1]
 model_name = args[2]
-# tissue = "germline"
-# model_name = "model3"
+# tissue = "skin"
+# model_name = "model4"
 tmp_file_path = ""
 
 error_output_file = paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_create_model_text_output.txt",sep="")
@@ -17,6 +17,29 @@ cat("output for the create_model notebook",file=error_output_file,sep="\n")
 #import the data 
 input_filePath = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/predictorDf.txt",sep="")
 all_data <- read.table(input_filePath, header = TRUE,sep="\t")
+
+#removing unamppable points 
+mappable_mut_summary <- all_data %>% 
+    mutate(methyl_covered = str_detect(methylation.100,"noCoverage")) %>% 
+        group_by(mappability,mutation_status)%>%
+    summarise(count=n())
+unmapped_muts = (filter(mappable_mut_summary, (mappability == "not")&(mutation_status == 1))$count)
+unmapped_nonMuts = (filter(mappable_mut_summary, (mappability == "not")&(mutation_status == 0))$count)
+string_to_print = paste(tissue,":",unmapped_muts," mutations and",unmapped_nonMuts,"nonMut sites removed by mappability filter out of ",nrow(all_data),"sites",sep=" ")
+cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
+all_data <- filter(all_data,mappability=="mappable")
+
+#handling the methylation columns 
+cat(paste(nrow(filter(all_data, methylation.10000 =="noCoverage")),"sites removed from methylation for no coverage",sep=" "),file=error_output_file,sep="\n",append=TRUE)
+all_data <- filter(all_data,methylation.10000!="noCoverage")
+all_data$methylation.10000 <- as.numeric(all_data$methylation.10000)
+
+#removing unecessary cols 
+all_data <- all_data[,!(names(all_data) %in% c("mappability","methylation.1","methylation.100"))]
+
+
+
+
 
 #this if conditional accounts for the accidental mix up in the smallest scale: 
 #sometimes the sclae is 0-bases around (at the site), while sometimes its 1-base around (triplet) 
@@ -84,11 +107,13 @@ all_data$mutation_status <- as.factor(all_data$mutation_status)
 all_data$triplet <- as.factor(all_data$triplet)
 all_data$Chromosome <- as.factor(all_data$Chromosome)
 all_data$annotation <- as.factor(all_data$annotation)
+all_data$CpGisland <- as.factor(all_data$CpGisland)
 
 #checking that the factor variables are correct (mutation status, triplets, chroms) --> will raise error if not true 
-# stopifnot(length(levels(all_data$mutation_status)) == 2)
+stopifnot(length(levels(all_data$mutation_status)) == 2)
 stopifnot(length(levels(all_data$triplet))==32)
 stopifnot(length(levels(all_data$Chromosome))==22)
+stopifnot(length(levels(all_data$CpGisland))==3)
 
 #if germline, then edit out the female and make the male the default ( i used to include both female and male) 
 if (tissue == "germline"){
@@ -145,25 +170,24 @@ for (cur_pred in num_cols){
 dev.off()
 
 #STANDARDIZING~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-if (tissue=="liver") {
-all_data[4:33] <- as.data.frame(scale(all_data[4:33], center=TRUE, scale=TRUE))
-all_data[35:37] <- as.data.frame(scale(all_data[35:37], center=TRUE, scale=TRUE))
-} else {
-all_data[4:36] <- as.data.frame(scale(all_data[4:36], center=TRUE, scale=TRUE))
-all_data[38:40] <- as.data.frame(scale(all_data[38:40], center=TRUE, scale=TRUE))
-}
+non_num_preds = c("Chromosome","triplet","mutation_status","annotation","CpGisland")
+preds_to_standardize<-!(names(all_data) %in% non_num_preds)
+all_data[, preds_to_standardize]<- (as.data.frame(scale(all_data[, preds_to_standardize],center=TRUE,scale=TRUE)))
 
 sample_sites_train <- sample (1:nrow(all_data), nrow(all_data)/2) 
 sample_sites_test = c(1:nrow(all_data))[-sample_sites_train]
 
+
 #creating and saving the corplot 
-num_data <- na.omit(subset(all_data, select=-c(Chromosome,triplet,annotation)))
+num_data <- na.omit(subset(all_data, select=-c(Chromosome,triplet,annotation,CpGisland)))
 num_data$mutation_status <- as.numeric(num_data$mutation_status)
 num_cor <- cor(num_data)
 filename = paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_corPlot.pdf", sep="")
 pdf(filename)
 corrplot(num_cor,method = "color",type="upper",number.cex=0.5,tl.cex = 0.5,main=tissue)
 dev.off() 
+
+
 
 #CORRELATION ANALYSIS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #create the correlation df and 
@@ -193,15 +217,13 @@ filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tiss
 write.csv(cor_df,filename, row.names = FALSE)
                           
 #REMOVING CORRELATED VARIABLES 
-if (tissue =="liver"){ #liver need its own b/c no H3k36me3/H3k27me3
-    all_data <- all_data[,c("Chromosome","triplet","mutation_status",
-                            'H3k27.10000','H3k4me1.10000','H3k4me3.10000',"Transcription.10000","Replication.10000","recombination.10000","DNAse.100",
-                            'laminB1.1','laminB1.100','laminB1.10000', "Repeats.1","Repeats.100","Repeats.10000","GC_content.1","GC_content.100","GC_content.10000","annotation")]
-}else{
-        all_data <- all_data[,c("Chromosome","triplet","mutation_status",
-                            'H3k27.10000','H3k4me1.10000','H3k4me3.10000','H3k27me3.10000','H3k36me3.10000',"Transcription.10000","Replication.10000","recombination.10000","DNAse.100",
-                            'laminB1.1','laminB1.100','laminB1.10000', "Repeats.1","Repeats.100","Repeats.10000","GC_content.1","GC_content.100","GC_content.10000","annotation")]
-}
+correlated_vars_toRm = c('H3k27.1','H3k27.100','H3k4me1.1','H3k4me1.100','H3k4me3.1','H3k4me3.100','H3k27me3.1','H3k27me3.100',
+                         'H3k36me3.1','H3k36me3.100',"Transcription.1","Transcription.100",
+                   "recombination.1","recombination.100","DNAse.1","DNAse.10000")
+all_data <- all_data[,!(names(all_data) %in% correlated_vars_toRm)]
+                          
+
+
 
 #MAKING A MODEL ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 model <- glm(mutation_status~., data=all_data[sample_sites_train,],family="binomial")
@@ -234,6 +256,12 @@ coef_df<- tibble::rownames_to_column(coef_df, "name") # https://stackoverflow.co
 coef_df_ordered <- coef_df[order(-coef_df$value),]#https://www.statmethods.net/management/sorting.html
 filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_coefDF.csv",sep="")#this sep is for the filename string
 write.csv(coef_df_ordered,filename,row.names=FALSE)
+                          
+                          
+                          
+                          
+                          
+
 
 #BOOTSTRAP                         
 #my bootstrapping help https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
@@ -241,7 +269,7 @@ coef_df<- as.data.frame("names" <- names(coef(model)))
 colnames(coef_df) <- c("name")
 
 print("bootstrap started")
-plm <- proc.time()
+plm <- Sys.time()
 for (i in 1:100){
     sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
     cur_data <- all_data[sample_sites_train_cur,]
@@ -252,7 +280,7 @@ for (i in 1:100){
     cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
     coef_df <- merge(coef_df,cur_coef_df)
 }
-paste("bootstrap took",proc.time()-plm,"seconds",sep=" ")
+paste("bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")
 
 #getting the mean and quantiles into a df for plotting 
 coef_df$mean_est <- rowMeans(coef_df[,2:101],na.rm=TRUE)
@@ -279,12 +307,10 @@ for (cur_pred in num_cols){
 dev.off()
                           
                           
+
 #CREATING MODELS FOR THE LIVER TISSUE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if (tissue != "liver"){
-    all_data <- all_data[,c("Chromosome","triplet","mutation_status",
-                            'H3k27.10000','H3k4me1.10000','H3k4me3.10000','H3k27me3.10000','H3k36me3.10000',"Transcription.10000","Replication.10000","recombination.10000","DNAse.100",
-                            'laminB1.1','laminB1.100','laminB1.10000', "Repeats.1","Repeats.100","Repeats.10000","GC_content.1","GC_content.100","GC_content.10000","annotation")]
-
+    all_data <- all_data[,!(names(all_data) %in% c("H3k36me3.1","H3k36me3.1","H3k36me3.1","H3k27me3.1","H3k27me3.1","H3k27me3.1"))]
     #one whole model for 
     model <- glm(mutation_status~., data=all_data[sample_sites_train,],family="binomial")
 
@@ -322,7 +348,7 @@ if (tissue != "liver"){
     coef_df<- as.data.frame("names" <- names(coef(model)))
     colnames(coef_df) <- c("name")
     print("started forLiver bootstrap")
-    plm <- proc.time()
+    plm <- Sys.time()
     for (i in 1:100){
         sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
         cur_data <- all_data[sample_sites_train_cur,]
@@ -333,7 +359,7 @@ if (tissue != "liver"){
         cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
         coef_df <- merge(coef_df,cur_coef_df)
     }
-    paste("forLiver bootstrap took",proc.time()-plm,"seconds",sep=" ")
+    paste("forLiver bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")
 
     #getting the mean and quantiles into a df for plotting 
     coef_df$mean_est <- rowMeans(coef_df[,2:101],na.rm=TRUE)
