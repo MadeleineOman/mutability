@@ -4,7 +4,7 @@ tissue_predOn = args[2]
 model_name = args[3]
 # tissue = "germline"
 # tissue_predOn = "blood"
-# model_name = "model3"
+# model_name = "model4"
 tmp_file_path = ""
 
 
@@ -14,10 +14,10 @@ library(stringr)
 
 #reading in data
 if (tissue_predOn =="liver"){ #oif conditional as different files to compare to liver 
-    tissue_coefs <- read.csv(paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_onLiver_coefDF_bootstrap.csv",sep=""))
+    tissue_coefs <- read.csv(paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_forLiver_coefDF_bootstrap.csv",sep=""))
 }else{tissue_coefs <- read.csv(paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_coefDF_bootstrap.csv",sep=""))}
 if (tissue=="liver"){
-   tissue_predOn_coefs <- read.csv(paste(tmp_file_path,"data/",tissue_predOn,"/dataframes/",model_name,"/",tissue_predOn,"_onLiver_coefDF_bootstrap.csv",sep=""))
+   tissue_predOn_coefs <- read.csv(paste(tmp_file_path,"data/",tissue_predOn,"/dataframes/",model_name,"/",tissue_predOn,"_forLiver_coefDF_bootstrap.csv",sep=""))
 }else{tissue_predOn_coefs <- read.csv(paste(tmp_file_path,"data/",tissue_predOn,"/dataframes/",model_name,"/",tissue_predOn,"_coefDF_bootstrap.csv",sep=""))}
 
 
