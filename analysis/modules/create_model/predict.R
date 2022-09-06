@@ -16,7 +16,7 @@ if ((tissue_predOn == "liver")&&(tissue != "liver")){
 }
 if ((tissue_predOn != "liver")&&(tissue == "liver")){
     load(paste(tmp_file_path,"data/",tissue_predOn,"/objects/",model_name,"/",tissue_predOn,"_forLiver_samples_sites_test.RData",sep=""))#sample_sites_test
-    all_data <- read.csv(paste(tmp_file_path,"data/",tissue_predOn,"/dataframes/",model_name,"/",tissue_predOn,"_onLiver_all_data_readyForPrediction.csv",sep=""),header=TRUE)
+    all_data <- read.csv(paste(tmp_file_path,"data/",tissue_predOn,"/dataframes/",model_name,"/",tissue_predOn,"_forLiver_all_data_readyForPrediction.csv",sep=""),header=TRUE)
 }else{
     load(paste(tmp_file_path,"data/",tissue_predOn,"/objects/",model_name,"/",tissue_predOn,"_samples_sites_test.RData",sep=""))#sample_sites_test
     all_data <- read.csv(paste(tmp_file_path,"data/",tissue_predOn,"/dataframes/",model_name,"/",tissue_predOn,"_all_data_readyForPrediction.csv",sep=""),header=TRUE)
@@ -35,18 +35,3 @@ filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tiss
 write.csv(probs_df ,filename, row.names = FALSE)
 
 
-#PREDICT~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-load(paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_model.RData",sep=""))
-load(paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_samples_sites_test.RData",sep=""))#sample_sites_test
-
-probs_df <- data.frame(x = probs)
-#binding the predicted proabilities to the OG data (but the test sites only)
-probs_df <- probs_df %>%
-    bind_cols(all_data[sample_sites_test,])
-#renaming the glm_probs coloumn
-colnames(probs_df ) <- replace(colnames(probs_df ), 1, "glm_probs")
-
-#writing to file 
-filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_on_",tissue_predOn,"_ProbabilityDf.csv",sep="")#this sep is for the filename string
-write.csv(probs_df ,filename, row.names = FALSE)
-# }
