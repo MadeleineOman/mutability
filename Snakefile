@@ -1,68 +1,45 @@
-tissues = ["skin","blood","liver","germline"]
-
 rule all: 
     input: 
-        #ANALYSIS FILES         
-        "analysis/liver/plots/model3/scatter_liver_on_liver.pdf",
-        "analysis/germline/plots/model3/scatter_germline_on_germline.pdf",
-        #"analysis/blood/plots/model3/scatter_blood_on_blood.pdf",
-        "analysis/skin/plots/model3/scatter_skin_on_skin.pdf",
-        
-        #"analysis/skin/plots/model3/scatter_skin_on_blood.pdf",
-        #"analysis/skin/plots/model3/scatter_skin_on_germline.pdf",
-        #"analysis/blood/plots/model3/scatter_blood_on_skin.pdf",
-        #"analysis/blood/plots/model3/scatter_blood_on_germline.pdf",
-        "analysis/germline/plots/model3/scatter_germline_on_skin.pdf",
-        "analysis/germline/plots/model3/scatter_germline_on_blood.pdf",
-        
-        "analysis/global/plots/model3/coefScatter_blood_on_skin.pdf",
-        "analysis/global/plots/model3/coefScatter_blood_on_germline.pdf",
-        "analysis/global/plots/model3/coefScatter_germline_on_skin.pdf",
-        
-        #LIVER TRACK FILES     
-        "data/liver/track_data/H3k4me1/H3k4me1.bed.gz",
-        "data/liver/track_data/H3k4me3/H3k4me3.bed.gz",
-        "data/liver/track_data/H3k27ac/H3k27ac.bed.gz",
-        "data/liver/track_data/H3k36me3/H3k36me3.bed.gz",
-        "data/liver/track_data/DNAse/DNAse.bed.gz",
-        "data/liver/track_data/transcription/transcription.bed.gz",        
-    
-        #SKIN TRACK FILES 
-
-        
-        #GERMLINE TRACK FILES 
-        "data/germline/track_data/transcription/transcription_male_hg18_sorted.bed.gz",
-        "data/germline/track_data/DNAse/DNAse_male_hg18_sorted.bed.gz",
-        "data/germline/track_data/H3k27/H3k27ac_male_hg18_sorted.bed.gz",
-            
-        #BLOOD TRACK FILES 
-        #"data/blood/mutations/blood_mutations_hg18_sorted_tabdelim.bed",
-        "data/blood/track_data/DNAse/DNAse.bed.gz", 
-        "data/blood/track_data/H3k27ac/H3k27ac.bed.gz", 
-        "data/blood/track_data/H3k4me1/H3k4me1.bed.gz", 
-        "data/blood/track_data/H3k4me3/H3k4me3.bed.gz", 
-        "data/blood/track_data/transcription/transcription.bed.gz", 
-        "data/blood/track_data/H3k27me3/H3k27me3.bed.gz",
-        #"data/blood/dataframes/model2/predictorDf_2022_05_12.txt",
-        
-        #GLOBAL FILES
-        "data/global/sequence/chr1.fa.gz",  
-        "data/global/track_data/laminB1/laminB1_chr1.bed.gz", 
-        "data/global/track_data/replication/replication.bed.gz",
-        "data/global/track_data/recombination/recombination.bed.gz",
-        "data/global/track_data/phastcons/phastcons_chr1.bed.gz",
-        "data/global/track_data/repeats/repeats.bed.gz",
-        
-        #COLON FILES 
-        #"data/colon/track_data/transcription/transcription.bed.gz",
-        #"data/colon/track_data/H3k27ac/H3k27ac.bed.gz",
-        #"data/colon/track_data/H3k27me3/H3k27me3.bed.gz",
-        #"data/colon/track_data/H3k4me1/H3k4me1.bed.gz",
-        #"data/colon/track_data/H3k4me3/H3k4me3.bed.gz",
-        #"data/colon/track_data/H3k36me3/H3k36me3.bed.gz",
-        #"data/colon/track_data/DNAse/DNAse.bed.gz"
+        #SCATTER PLOT PREDICTION ON SELF        
+        "analysis/blood/plots/model4/scatter_blood_on_blood.pdf",
+        "analysis/liver/plots/model4/scatter_liver_on_liver.pdf",
+        "analysis/germline/plots/model4/scatter_germline_on_germline.pdf",
+        "analysis/skin/plots/model4/scatter_skin_on_skin.pdf",
+        #SCATTER PLOT PREDICTION ON OTHER 
+        "analysis/skin/plots/model4/scatter_skin_on_blood.pdf",
+        "analysis/skin/plots/model4/scatter_skin_on_germline.pdf",
+        "analysis/skin/plots/model4/scatter_skin_on_liver.pdf",
+        "analysis/blood/plots/model4/scatter_blood_on_skin.pdf",
+        "analysis/blood/plots/model4/scatter_blood_on_germline.pdf",
+        "analysis/blood/plots/model4/scatter_blood_on_liver.pdf",
+        "analysis/germline/plots/model4/scatter_germline_on_skin.pdf",
+        "analysis/germline/plots/model4/scatter_germline_on_blood.pdf",
+        "analysis/germline/plots/model4/scatter_germline_on_liver.pdf",
+        "analysis/germline/plots/model4/scatter_germline_on_liver.pdf",
+        "analysis/liver/plots/model4/scatter_liver_on_blood.pdf",
+        "analysis/liver/plots/model4/scatter_liver_on_skin.pdf",
+        "analysis/liver/plots/model4/scatter_liver_on_germline.pdf",
+        #COEF COMPARISON SCATTER PLOT 
+        "analysis/global/plots/model4/coefScatter_blood_on_skin.pdf",
+        "analysis/global/plots/model4/coefScatter_blood_on_germline.pdf",
+        "analysis/global/plots/model4/coefScatter_blood_on_liver.pdf",
+        "analysis/global/plots/model4/coefScatter_germline_on_skin.pdf",
+        "analysis/global/plots/model4/coefScatter_germline_on_skin.pdf",
+        "analysis/global/plots/model4/coefScatter_germline_on_liver.pdf",
+        "analysis/global/plots/model4/coefScatter_skin_on_liver.pdf",
+        #PCA 
+        "analysis/global/plots/{model}/pca_allData_mutsAndNonMuts.pdf"
 
 #ANALYSIS RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+rule pca: 
+    input: "data/blood/dataframes/model4/blood_forLiver_all_data_readyForPrediction.csv"
+    "data/liver/dataframes/model4/liver_all_data_readyForPrediction.csv"
+    "data/germline/dataframes/model4/germline_forLiver_all_data_readyForPrediction.csv"
+    "data/skin/dataframes/model4/skin_forLiver_all_data_readyForPrediction.csv"
+    output: "analysis/global/plots/{model}/pca_allData_mutsAndNonMuts.pdf"
+    conda: "conda_Rplotting.yml"
+    shell:
 
 rule plotting_coef: 
     input: "data/{tissue}/dataframes/{model}/{tissue}_coefDF.csv",
@@ -88,19 +65,110 @@ rule createModel:
     output:"data/{tissue}/objects/{model}/{tissue}_model.RData",
            "data/{tissue}/dataframes/{model}/{tissue}_coefDF.csv"
     conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/create_model.R {wildcards.tissue} {wildcards.model}"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model}"
 
-rule createDF: 
-    output: "data/{tissue}/dataframes/model2/predictorDf.txt"
+#CREATE DF RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+rule createDF_blood: 
+    input: 
+        #"data/global/sequence/chr1.fa.gz",  
+        "data/global/track_data/laminB1/laminB1_chr1.bed.gz", 
+        "data/global/track_data/replication/replication.bed.gz",
+        "data/global/track_data/recombination/recombination.bed.gz",
+        #"data/global/track_data/phastcons/phastcons_chr1.bed.gz",
+        "data/global/track_data/repeats/repeats.bed.gz",
+        "data/global/track_data/mappability/mappability.bed.gz",
+        #"data/blood/mutations/blood_mutations_hg18_sorted_tabdelim.bed",
+        "data/blood/track_data/DNAse/DNAse.bed.gz", 
+        "data/blood/track_data/H3k27ac/H3k27ac.bed.gz", 
+        "data/blood/track_data/H3k4me1/H3k4me1.bed.gz", 
+        "data/blood/track_data/H3k4me3/H3k4me3.bed.gz", 
+        "data/blood/track_data/transcription/transcription.bed.gz", 
+        "data/blood/track_data/H3k27me3/H3k27me3.bed.gz",
+        "data/blood/track_data/methylation/methylation.bed.gz",
+    output: "data/blood/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py {wildcards.tissue} 'model2' '[1,100,10000]';"
-        "grep 'buffer' data/{wildcards.tissue}/dataframes/model2/predictorDf.txt > data/{wildcards.tissue}/dataframes/model2/predictorDf_errorlog.txt;"
-        "grep 'discord' data/{wildcards.tissue}/dataframes/model2/predictorDf.txt >> data/liver/dataframes/model2/predictorDf_errorlog.txt;"
-        "grep -v 'discord' data/{wildcards.tissue}/dataframes/model2/predictorDf.txt > data/{wildcards.tissue}/dataframes/model2/predictorDf_noDiscord.txt;"
-        "grep -v 'buffer' data/{wildcards.tissue}/dataframes/model2/predictorDf_noDiscord.txt >  data/{wildcards.tissue}/dataframes/model2/predictorDf.txt"
+    shell: "python analysis/modules/createDF/createDF.py blood {wildcards.model} '[1,100,10000]';"
+        "grep 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf.txt >> data/blood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep 'discord' data/blood/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep -v 'discord' data/blood/dataframes/{wildcards.model}/predictorDf.txt > data/blood/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
+        "grep -v 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/blood/dataframes/{wildcards.model}/predictorDf.txt"
+        
+rule createDF_liver: 
+    input:  
+        #"data/global/sequence/chr1.fa.gz",  
+        "data/global/track_data/laminB1/laminB1_chr1.bed.gz", 
+        "data/global/track_data/replication/replication.bed.gz",
+        "data/global/track_data/recombination/recombination.bed.gz",
+        #"data/global/track_data/phastcons/phastcons_chr1.bed.gz",
+        "data/global/track_data/repeats/repeats.bed.gz",
+        "data/global/track_data/mappability/mappability.bed.gz",
+        "data/liver/track_data/H3k4me1/H3k4me1.bed.gz",
+        "data/liver/track_data/H3k4me3/H3k4me3.bed.gz",
+        "data/liver/track_data/H3k27ac/H3k27ac.bed.gz",
+        "data/liver/track_data/H3k36me3/H3k36me3.bed.gz",
+        "data/liver/track_data/DNAse/DNAse.bed.gz",
+        "data/liver/track_data/transcription/transcription.bed.gz", 
+        "data/liver/track_data/methylation/methylation.bed.gz",
+    output: "data/liver/dataframes/{model}/predictorDf.txt"
+    threads: 10
+    conda: "conda_createDF.yml"
+    shell: "python analysis/modules/createDF/createDF.py liver {wildcards.model} '[1,100,10000]';"
+        "grep 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf.txt >> data/liver/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep 'discord' data/liver/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep -v 'discord' data/liver/dataframes/{wildcards.model}/predictorDf.txt > data/liver/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
+        "grep -v 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/liver/dataframes/{wildcards.model}/predictorDf.txt"
+        
+rule createDF_germline: 
+    input:  
+        #"data/global/sequence/chr1.fa.gz",  
+        "data/global/track_data/laminB1/laminB1_chr1.bed.gz", 
+        "data/global/track_data/replication/replication.bed.gz",
+        "data/global/track_data/recombination/recombination.bed.gz",
+        #"data/global/track_data/phastcons/phastcons_chr1.bed.gz",
+        "data/global/track_data/repeats/repeats.bed.gz",
+        "data/global/track_data/mappability/mappability.bed.gz",
+        "data/germline/track_data/transcription/transcription_male_hg18_sorted.bed.gz",
+        "data/germline/track_data/DNAse/DNAse_male_hg18_sorted.bed.gz",
+        "data/germline/track_data/H3k27/H3k27ac_male_hg18_sorted.bed.gz",
+        "data/germline/track_data/methylation/methylation.bed.gz",
+    output: "data/germline/dataframes/{model}/predictorDf.txt"
+    threads: 10
+    conda: "conda_createDF.yml"
+    shell: "python analysis/modules/createDF/createDF.py germline {wildcards.model} '[1,100,10000]';"
+        "grep 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf.txt >> data/germline/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep 'discord' data/germline/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep -v 'discord' data/germline/dataframes/{wildcards.model}/predictorDf.txt > data/germline/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
+        "grep -v 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/germline/dataframes/{wildcards.model}/predictorDf.txt"
+        
+rule createDF_skin: 
+    input:   
+        #"data/global/sequence/chr1.fa.gz",  
+        "data/global/track_data/laminB1/laminB1_chr1.bed.gz", 
+        "data/global/track_data/replication/replication.bed.gz",
+        "data/global/track_data/recombination/recombination.bed.gz",
+        #"data/global/track_data/phastcons/phastcons_chr1.bed.gz",
+        "data/global/track_data/repeats/repeats.bed.gz",
+        "data/global/track_data/mappability/mappability.bed.gz",
+        "data/skin/track_data/methylation/methylation.bed.gz",
+    output: "data/skin/dataframes/{model}/predictorDf.txt"
+    threads: 10
+    conda: "conda_createDF.yml"
+    shell: "python analysis/modules/createDF/createDF.py skin {wildcards.model} '[1,100,10000]';"
+        "grep 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf.txt >> data/skin/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep 'discord' data/skin/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep -v 'discord' data/skin/dataframes/{wildcards.model}/predictorDf.txt > data/skin/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
+        "grep -v 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/skin/dataframes/{wildcards.model}/predictorDf.txt"
+
+
 
 #LIVER TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+rule liver_methylation_downloadWrangle:
+    output: "data/liver/track_data/methylation/methylation.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/methylation_threeFilesCombine.sh liver ENCFF863DRW ENCFF244CRP ENCFF505YJQ"
 
 rule liver_H3k27ac_downloadWrangle:
     output: "data/liver/track_data/H3k27ac/H3k27ac.bed.gz"
@@ -135,20 +203,25 @@ rule liver_transcription_downloadWrangle:
         
 #SKIN TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-
+rule skin_methylation_downloadWrangle:
+    output: "data/skin/track_data/methylation/methylation.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/methylation_threeFilesCombine.sh skin ENCFF019FIO ENCFF221CNC ENCFF706NQD"
 
 
 #GERMLINE TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
 
-
+rule germline_methylation_downloadWrangle:
+    output: "data/germline/track_data/methylation/methylation.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/methylation_threeFilesCombine.sh germline ENCFF602MJL ENCFF082IED  ENCFF887HIO"
 
 rule germline_H3k27ac_download:
-    output: "data/germline/track_data/H3k27/H3k27ac_male_hg18_sorted.bed.gz",
+    output: "data/germline/track_data/H3k27/H3k27ac_male_hg18_sorted.bed.gz"
     shell: "bash analysis/germline/track_data/H3k27/germline_H3k27ac_downloadWrangle.sh" 
 
 rule germline_dnase_download:
-    output: "data/germline/track_data/DNAse/DNAse_male_hg18_sorted.bed.gz",
+    output: "data/germline/track_data/DNAse/DNAse_male_hg18_sorted.bed.gz"
     shell: "bash analysis/germline/track_data/DNAse/germline_dnase_downloadWrangle.sh" 
 
 rule germline_txn_download:
@@ -157,12 +230,7 @@ rule germline_txn_download:
 
 
 #BLOOD TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-rule blood_createDF: #doesnt work yet 
-    output: "data/blood/dataframes/model2/predictorDf_2022_05_12.txt"
-    conda: "conda_snakeSomMut_env.yml"
-    shell: "bash analysis/modules/createDF/createDF.py 'blood' 'model2' '[1,100,10000]' "
-    
+ 
 rule blood_mut_download:
     input: "analysis/blood/mutations/DSMNC_list_all_files_blood.csv"
     output: "data/blood/mutations/all_blood_mutations.txt"
@@ -183,9 +251,9 @@ rule blood_mut_liftoverSort:
         "python analysis/blood/mutations/blood_mutations_testing.py"
 
 rule blood_methylation_downloadWrangle:
-    output: "data/blood/track_data/methylation/methylation_CHG.bed.gz"
+    output: "data/blood/track_data/methylation/methylation.bed.gz"
     conda: "conda_snakeSomMut_env.yml"
-    shell: "bash analysis/blood/track_data/methylation/blood_methylation_downloadWrangle.sh"
+    shell: "bash analysis/modules/download_encode/methylation_threeFilesCombine.sh blood ENCFF187PPX ENCFF348PBG ENCFF233CYB"
 
 rule blood_txn_downloadWrangle:
     output: "data/blood/track_data/transcription/transcription.bed.gz"
@@ -223,7 +291,17 @@ rule blood_H3k4me3_downloadWrangle:
 
 
 #GLOBAL TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
-        
+
+rule annotation_downloadWrangle:
+    output: "data/global/track_data/annotation/annotation.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/global/track_data/annotation/global_annotation_downloadWrangle.sh"
+
+rule mappability_downloadWrangle:
+    output: "data/global/track_data/mappability/mappability.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/global/track_data/mappability/global_mappability_downloadWrangle.sh"
+
 rule laminB1_downloadWrangle:
     output: "data/global/track_data/laminB1/laminB1_chr1.bed.gz"
     conda: "conda_snakeSomMut_env.yml"
