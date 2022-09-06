@@ -3,11 +3,11 @@ model_name = args[1]
 bin_size_desiredMin = as.integer(args[2])
 tissue = args[3]
 tissue_predOn = args[4]
-# tissue  = "germline"
-# tissue_predOn = "germline"
-# model_name = "model3"
+# tissue  = "blood"
+# tissue_predOn = "blood"
+# model_name = "model4"
 # bin_size_desiredMin = 400
-tmp_pathToFiles = ""
+tmp_pathToFiles = "" #an arbitrary variable i use to convert b/t the directory of the creator notebook (play mode) and the home directory (snakemake executible)
 
 library(ggplot2)
 library(stringr)
