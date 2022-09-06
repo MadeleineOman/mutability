@@ -310,7 +310,7 @@ dev.off()
 
 #CREATING MODELS FOR THE LIVER TISSUE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if (tissue != "liver"){
-    all_data <- all_data[,!(names(all_data) %in% c("H3k36me3.1","H3k36me3.1","H3k36me3.1","H3k27me3.1","H3k27me3.1","H3k27me3.1"))]
+    all_data <- all_data[,!(names(all_data) %in% c("H3k27me3.10000"))]#still no h3k27me3 in the liver model 
     #one whole model for 
     model <- glm(mutation_status~., data=all_data[sample_sites_train,],family="binomial")
 
