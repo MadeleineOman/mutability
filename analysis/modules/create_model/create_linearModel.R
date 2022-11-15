@@ -7,9 +7,10 @@ library(rlang)
 args = commandArgs(trailingOnly=TRUE)
 tissue = args[1]
 model_name = args[2]
-# tissue = "skin"
-# model_name = "model4"
+# tissue = "blood"
+# model_name = "model6"
 tmp_file_path = ""
+
 
 error_output_file = paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_create_model_text_output.txt",sep="")
 cat("output for the create_model notebook",file=error_output_file,sep="\n")
@@ -18,9 +19,20 @@ cat("output for the create_model notebook",file=error_output_file,sep="\n")
 input_filePath = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/predictorDf.txt",sep="")
 all_data <- read.table(input_filePath, header = TRUE,sep="\t")
 
+#chnaging the 1-surround to 0 surround (--> due to a mess up, only blood )
+# if (tissue=="blood"){
+#     all_data <- all_data %>% 
+#   rename(Apercent.0=Apercent.1,Gpercent.0=Gpercent.1,Cpercent.0=Cpercent.1,Tpercent.0=Tpercent.1,
+#          methylation_coverage.0=methylation_coverage.1,methylation_precent.0=methylation_precent.1,
+#          H3k27.0=H3k27.1,H3k27me3.0=H3k27me3.1,H3k4me1.0=H3k4me1.1,H3k4me3.0=H3k4me3.1,H3k36me3.0=H3k36me3.1,
+#          Transcription.0=Transcription.1,recombination.0=recombination.1,Repeats.0=Repeats.1,DNAse.0=DNAse.1,laminB1.0=laminB1.1)
+# }
+
+#
+all_data$annotation <- gsub("protein_binding","not_transcribed",all_data$annotation)#there are so few protein binding sites that we may as well omit 
+
 #removing unamppable points 
 mappable_mut_summary <- all_data %>% 
-    mutate(methyl_covered = str_detect(methylation.100,"noCoverage")) %>% 
         group_by(mappability,mutation_status)%>%
     summarise(count=n())
 unmapped_muts = (filter(mappable_mut_summary, (mappability == "not")&(mutation_status == 1))$count)
@@ -28,38 +40,76 @@ unmapped_nonMuts = (filter(mappable_mut_summary, (mappability == "not")&(mutatio
 string_to_print = paste(tissue,":",unmapped_muts," mutations and",unmapped_nonMuts,"nonMut sites removed by mappability filter out of ",nrow(all_data),"sites",sep=" ")
 cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
 all_data <- filter(all_data,mappability=="mappable")
+all_data <- all_data[,!(names(all_data) %in% c("mappability"))]
 
-#handling the methylation columns 
-cat(paste(nrow(filter(all_data, methylation.10000 =="noCoverage")),"sites removed from methylation for no coverage",sep=" "),file=error_output_file,sep="\n",append=TRUE)
-all_data <- filter(all_data,methylation.10000!="noCoverage")
-all_data$methylation.10000 <- as.numeric(all_data$methylation.10000)
-
-#removing unecessary cols 
-all_data <- all_data[,!(names(all_data) %in% c("mappability","methylation.1","methylation.100"))]
-
-
-
+#gc content 
+all_data <- all_data %>%
+    mutate(GC_content.0 = Gpercent.0+Cpercent.0) %>%
+    mutate(GC_content.100 = Gpercent.100+Cpercent.100) %>% 
+    mutate(GC_content.10000 = Gpercent.10000+Cpercent.10000)
+all_data <- all_data[,!(names(all_data) %in% c('Apercent.0','Gpercent.0','Cpercent.0','Tpercent.0',
+                                       'Apercent.100','Gpercent.100','Cpercent.100','Tpercent.100',
+                                       'Apercent.10000','Gpercent.10000','Cpercent.10000','Tpercent.10000'))]
 
 
-#this if conditional accounts for the accidental mix up in the smallest scale: 
-#sometimes the sclae is 0-bases around (at the site), while sometimes its 1-base around (triplet) 
-if (".0" %in% unique(str_extract(colnames(all_data),"[.][0-9]*"))) {
-        all_data <- all_data %>%
-            mutate(GC_content.0 = Gpercent.0+Cpercent.0) %>%
-            mutate(GC_content.100 = Gpercent.100+Cpercent.100) %>% 
-            mutate(GC_content.10000 = Gpercent.10000+Cpercent.10000)
-        all_data <- all_data[,!(names(all_data) %in% c("site",'Apercent.0','Gpercent.0','Cpercent.0','Tpercent.0',
-                                               'Apercent.100','Gpercent.100','Cpercent.100','Tpercent.100',
-                                               'Apercent.10000','Gpercent.10000','Cpercent.10000','Tpercent.10000'))]
-}else if (".1" %in% unique(str_extract(colnames(all_data),"[.][0-9]*"))){
-    all_data <- all_data %>%
-        mutate(GC_content.1 = Gpercent.1+Cpercent.1) %>%
-        mutate(GC_content.100 = Gpercent.100+Cpercent.100) %>% 
-        mutate(GC_content.10000 = Gpercent.10000+Cpercent.10000)
-    all_data <- all_data[,!(names(all_data) %in% c("site",'Apercent.1','Gpercent.1','Cpercent.1','Tpercent.1',
-                                               'Apercent.100','Gpercent.100','Cpercent.100','Tpercent.100',
-                                               'Apercent.10000','Gpercent.10000','Cpercent.10000','Tpercent.10000'))]
+#create df to test coverage in the methylation download notebook 
+bases = c("A","T","C","G")
+c_trips = c()
+for (b1 in bases){
+    for (b3 in bases){
+        c_trips <- append(c_trips,paste(b1,"C",b3,sep=""))
+    }
 }
+c_trips_df <- filter(all_data, triplet%in%c_trips)[,c("Chromosome","site","triplet",'methylation_precent.0','methylation_coverage.0')]
+write.csv(c_trips_df,paste(tmp_file_path,"data/",tissue,"/track_data/methylation/predDf_ctrips.csv",sep=""))
+
+# # plotting METHYLATION coverage  in dataset
+# # create the distributions for methylation 
+# all_data$test_meth <- as.integer(all_data$methylation_precent.0)
+# all_data$test_meth_cov <- as.integer(all_data$methylation_coverage.0)
+# to_plot = ((filter(all_data,GC_content.0==1&test_meth_cov <100))$test_meth_cov)
+# to_plot_percent = ((filter(all_data,GC_content.0==1&test_meth_cov <100))$test_meth)
+# hist(as.integer(to_plot),main=paste(tissue,"coverage",sep=" "),breaks=40)
+# hist(as.integer(to_plot_percent),main=paste(tissue,"percent methylation",sep=" "),breaks=40)
+
+
+#METHYLATION                                 
+#create the distributions for methylation 
+# all_data$test_meth <- as.integer(all_data$methylation_precent.0)
+# all_data$test_meth_cov <- as.integer(all_data$methylation_coverage.0)
+# to_plot = ((filter(all_data,GC_content.0==1&test_meth_cov <100))$test_meth_cov)
+# hist(as.integer(to_plot),main=paste(tissue,"coverage",sep=" "),breaks=40)
+#create the methylabel column 
+
+
+all_data <- all_data %>% 
+      mutate(methylable = ifelse((methylation_precent.0=="no_percent_data" & GC_content.0 == 0), "no",#not a C/G site = no 
+               ifelse((methylation_precent.0=="no_percent_data" & GC_content.0 == 1), NA, # C/G site with no data = NA 
+               ifelse(methylation_precent.0=="0.0","no","yes")))) #C/G site with 0 = no, >0 = yes 
+
+
+#https://stackoverflow.com/questions/24459752/can-dplyr-package-be-used-for-conditional-mutating
+if(nrow(all_data %>% filter(methylable=="yes" & GC_content.0 == 0)) != 0 ){ #making sure only gc sites are methylated 
+        methyl_messed<- filter(all_data,methylable=="yes" & GC_content.0 == 0)[,c("Chromosome","site","triplet","methylation_precent.0","methylable")]
+        paste(nrow(methyl_messed),"rows have non-zero methylation values for non-c sites",sep=" ")
+        filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_methyl_messed.csv",sep="")
+        write.csv(methyl_messed,filename, row.names = FALSE)
+        all_data <- all_data %>% 
+          mutate(methylable = ifelse((methylation_precent.0=="infsuff_coverage" & GC_content.0 == 0), "no", methylable))
+}
+#get methylation summary stats to print to output file 
+methyl_mut_summary <- all_data %>% 
+        group_by(methylable,mutation_status)%>%
+    summarise(count=n())
+cantmeth_muts <- (filter(methyl_mut_summary, is.na(methylable)&(mutation_status == 1)))$count
+cantmeth_NonMuts <- (filter(methyl_mut_summary, is.na(methylable)&(mutation_status == 0)))$count
+string_to_print = paste(tissue,":",cantmeth_muts," mutations and",cantmeth_NonMuts,"nonMut sites removed by no methylable coverage out of ",nrow(all_data),"sites",sep=" ")
+cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
+#removing methylation columns 
+all_data <- all_data[,!(names(all_data) %in% c("site","methylation_precent.0","methylation_precent.100","methylation_precent.10000",
+                                               "methylation_coverage.0","methylation_coverage.100","methylation_coverage.10000"))]
+all_data <- all_data[!(is.na(all_data$methylable)),] #getting rid of the methylation nas 
+
 
 #editing the triplets 
 all_data$triplet <- toupper(all_data$triplet)
@@ -67,6 +117,7 @@ all_data$triplet <- toupper(all_data$triplet)
 cat(paste(nrow(all_data[all_data$triplet == "NNN",]), "rows removed due to N in triplet, ",sep=" "),file=error_output_file,sep="\n",append=TRUE)
 all_data <- all_data[all_data$triplet != "NNN",]
 cat(paste(nrow(all_data),"rows left",sep=" "),file=error_output_file,sep="\n",append=TRUE)
+
 
 #how many mutations and sites 
 #printing the mutation ratio to file 
@@ -78,6 +129,7 @@ cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
 #printing the total rows included to file 
 string_to_print = paste("total nrow", nrow(all_data),sep=" ")
 cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
+
 
 #converting 64-->32 triplets 
 rc_removeAG <- function(dna){
@@ -108,12 +160,14 @@ all_data$triplet <- as.factor(all_data$triplet)
 all_data$Chromosome <- as.factor(all_data$Chromosome)
 all_data$annotation <- as.factor(all_data$annotation)
 all_data$CpGisland <- as.factor(all_data$CpGisland)
+all_data$methylable <- as.factor(all_data$methylable)
 
 #checking that the factor variables are correct (mutation status, triplets, chroms) --> will raise error if not true 
 stopifnot(length(levels(all_data$mutation_status)) == 2)
 stopifnot(length(levels(all_data$triplet))==32)
 stopifnot(length(levels(all_data$Chromosome))==22)
 stopifnot(length(levels(all_data$CpGisland))==3)
+stopifnot(length(levels(all_data$methylable))==2)
 
 #if germline, then edit out the female and make the male the default ( i used to include both female and male) 
 if (tissue == "germline"){
@@ -169,9 +223,20 @@ for (cur_pred in num_cols){
 }
 dev.off()
 
-#STANDARDIZING~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-non_num_preds = c("Chromosome","triplet","mutation_status","annotation","CpGisland")
+
+#making categorical columns into seperate numerical columns ready for standardizing 
+all_data$dummy <- 1#need a dumym column that the model.matrix can remove (as it has to remove a column aparently)
+muts_col <- all_data$mutation_status#saving the column of mutations so i can add it back later 
+non_num_preds = c("mutation_status")
 preds_to_standardize<-!(names(all_data) %in% non_num_preds)
+all_data <-(data.frame((model.matrix(dummy~., all_data[, preds_to_standardize])[,-1] )))
+all_data$mutation_status <- muts_col
+
+
+
+#STANDARDIZING~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+non_num_preds = c("mutation_status")
+preds_to_standardize<-!(names(all_data) %in% non_num_preds)#yes i have to do this again because i chnaged the order of the mutant column 
 all_data[, preds_to_standardize]<- (as.data.frame(scale(all_data[, preds_to_standardize],center=TRUE,scale=TRUE)))
 
 sample_sites_train <- sample (1:nrow(all_data), nrow(all_data)/2) 
@@ -179,7 +244,8 @@ sample_sites_test = c(1:nrow(all_data))[-sample_sites_train]
 
 
 #creating and saving the corplot 
-num_data <- na.omit(subset(all_data, select=-c(Chromosome,triplet,annotation,CpGisland)))
+# num_data <- na.omit(subset(all_data, select=-c(Chromosome,triplet,annotation,CpGisland))) --> dont need this anymore as correlating ther categoricals too 
+num_data <-all_data
 num_data$mutation_status <- as.numeric(num_data$mutation_status)
 num_cor <- cor(num_data)
 filename = paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_corPlot.pdf", sep="")
@@ -215,16 +281,31 @@ cor_df <- cor_df[order(cor_df$first_name),]
 #save to file 
 filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_fullModel_corTable_above0.8.csv", sep="")
 write.csv(cor_df,filename, row.names = FALSE)
+                    
                           
 #REMOVING CORRELATED VARIABLES 
-correlated_vars_toRm = c('H3k27.1','H3k27.100','H3k4me1.1','H3k4me1.100','H3k4me3.1','H3k4me3.100','H3k27me3.1','H3k27me3.100',
-                         'H3k36me3.1','H3k36me3.100',"Transcription.1","Transcription.100",
-                   "recombination.1","recombination.100","DNAse.1","DNAse.10000")
+correlated_vars_toRm = c('H3k27.1','H3k27.0','H3k27.100',
+                         'H3k4me1.0','H3k4me1.1','H3k4me1.100',
+                         'H3k4me3.0','H3k4me3.1','H3k4me3.100',
+                         'H3k27me3.0','H3k27me3.1','H3k27me3.100',
+                         'H3k36me3.0','H3k36me3.1','H3k36me3.100',
+                         "Transcription.0","Transcription.1","Transcription.100",
+                         "recombination.0","recombination.1","recombination.100",
+                         "DNAse.0","DNAse.1","DNAse.10000",
+                         "GC_content.0",
+                         "Repeats.100")
 all_data <- all_data[,!(names(all_data) %in% correlated_vars_toRm)]
+#redoing rhe corplot after emoving correlations 
+
+num_data <-all_data
+num_data$mutation_status <- as.numeric(num_data$mutation_status)
+num_cor <- cor(num_data)
+filename = paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_corPlot_pruned.pdf", sep="")
+pdf(filename)
+corrplot(num_cor,method = "color",type="upper",number.cex=0.5,tl.cex = 0.5,main=tissue)
+dev.off() 
                           
-
-
-
+                          
 #MAKING A MODEL ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 model <- glm(mutation_status~., data=all_data[sample_sites_train,],family="binomial")
 
@@ -257,18 +338,14 @@ coef_df_ordered <- coef_df[order(-coef_df$value),]#https://www.statmethods.net/m
 filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_coefDF.csv",sep="")#this sep is for the filename string
 write.csv(coef_df_ordered,filename,row.names=FALSE)
                           
-                          
-                          
-                          
-                          
 
-
+                          
 #BOOTSTRAP                         
 #my bootstrapping help https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
 coef_df<- as.data.frame("names" <- names(coef(model)))
 colnames(coef_df) <- c("name")
 
-print("bootstrap started")
+paste(tissue,"bootstrap started",sep=" ")
 plm <- Sys.time()
 for (i in 1:100){
     sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
@@ -280,13 +357,14 @@ for (i in 1:100){
     cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
     coef_df <- merge(coef_df,cur_coef_df)
 }
-paste("bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")
+paste(tissue,"bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")
 
 #getting the mean and quantiles into a df for plotting 
 coef_df$mean_est <- rowMeans(coef_df[,2:101],na.rm=TRUE)
 quantile_df <- data.frame(coef_df$name,t(apply(coef_df[,2:101],1,quantile,c(0.025,0.975),na.rm=TRUE)))#https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
 colnames(quantile_df) <- c("name","quant025","quant975")
 bootstrap_df<- merge(coef_df,quantile_df)
+bootstrap_df <- bootstrap_df[order(-bootstrap_df$mean_est),]#
 filename <- paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_coefDF_bootstrap.csv",sep="")
 write.csv(bootstrap_df,filename,row.names=FALSE)
 
@@ -310,7 +388,7 @@ dev.off()
 
 #CREATING MODELS FOR THE LIVER TISSUE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if (tissue != "liver"){
-    all_data <- all_data[,!(names(all_data) %in% c("H3k27me3.10000"))]#still no h3k27me3 in the liver model 
+    all_data <- all_data[,!(names(all_data) %in% c("H3k27me3.10000"))]
     #one whole model for 
     model <- glm(mutation_status~., data=all_data[sample_sites_train,],family="binomial")
 
@@ -347,7 +425,7 @@ if (tissue != "liver"){
     #my bootstrapping help https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
     coef_df<- as.data.frame("names" <- names(coef(model)))
     colnames(coef_df) <- c("name")
-    print("started forLiver bootstrap")
+    paste(tissue,"started forLiver bootstrap",sep=" ")
     plm <- Sys.time()
     for (i in 1:100){
         sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
@@ -359,7 +437,7 @@ if (tissue != "liver"){
         cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
         coef_df <- merge(coef_df,cur_coef_df)
     }
-    paste("forLiver bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")
+    paste(tissue,"forLiver bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")
 
     #getting the mean and quantiles into a df for plotting 
     coef_df$mean_est <- rowMeans(coef_df[,2:101],na.rm=TRUE)
@@ -381,9 +459,10 @@ if (tissue != "liver"){
         cur_data = all_data[,cur_pred]
         title = paste(cur_pred,"\nsd:",round(sd(cur_data),digits=2), " mean:", round(mean(cur_data),digits=2), " median:",round(median(cur_data),digits=2),
                       " min,max:",round(min(cur_data),digits=5),",",max(round(cur_data,digits=2)),
-                      "\nboostrap mean est:",round(filter(bootstrap_df, name==cur_pred)$mean_est,digits=5), "singificant?:", filter(bootstrap_df, name==cur_pred)$significant)
+                      "\nboostrap mean est:",round(filter(bootstrap_df, name==cur_pred)$mean_est,digits=5), "significant?:", filter(bootstrap_df, name==cur_pred)$significant)
         hist(cur_data, main=title,breaks=20)
     }
     dev.off()
     #removing the 0s doesnt make any sense for standardized predictors 
-}
+}   
+                          
