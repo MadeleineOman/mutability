@@ -1,49 +1,96 @@
+
 rule all: 
     input: 
+        #new df 
+        "data/blood/dataframes/model6/predictorDf.txt",
+        "data/skin/dataframes/model6/predictorDf.txt",
+        "data/germline/dataframes/model6/predictorDf.txt",
+        "data/liver/dataframes/model6/predictorDf.txt",
+        
+        #remake the model 
+        "data/skin/dataframes/model6/skin_coefDF_boot10k_noCpG.csv",
+        "data/germline/dataframes/model6/germline_coefDF_boot10k_noCpG.csv",
+        "data/liver/dataframes/model6/liver_coefDF_boot10k_noCpG.csv",
+        "data/blood/dataframes/model6/blood_coefDF_boot10k_noCpG.csv",
+        
+        "data/skin/dataframes/model6/skin_coefDF_boot10k_noTriplets.csv",
+        "data/germline/dataframes/model6/germline_coefDF_boot10k_noTriplets.csv",
+        "data/liver/dataframes/model6/liver_coefDF_boot10k_noTriplets.csv",
+        "data/blood/dataframes/model6/blood_coefDF_boot10k_noTriplets.csv",
+        
+        "data/skin/dataframes/model6/skin_coefDF_bloodEquiv_boot10k.csv",
+        "data/germline/dataframes/model6/germline_coefDF_bloodEquiv_boot10k.csv",
+        "data/liver/dataframes/model6/liver_coefDF_bloodEquiv_boot10k.csv",
+        "data/blood/dataframes/model6/blood_coefDF_bloodEquiv_boot10k.csv",
+        
+        "data/skin/dataframes/model6/skin_coefDF_bloodEquiv_boot10k_noCpG.csv",
+        "data/germline/dataframes/model6/germline_coefDF_bloodEquiv_boot10k_noCpG.csv",
+        "data/liver/dataframes/model6/liver_coefDF_bloodEquiv_boot10k_noCpG.csv",
+        "data/blood/dataframes/model6/blood_coefDF_bloodEquiv_boot10k_noCpG.csv",
+        
+        "data/skin/dataframes/model6/skin_coefDF_bloodEquiv_boot10k_noTriplets.csv",
+        "data/germline/dataframes/model6/germline_coefDF_bloodEquiv_boot10k_noTriplets.csv",
+        "data/liver/dataframes/model6/liver_coefDF_bloodEquiv_boot10k_noTriplets.csv",
+        "data/blood/dataframes/model6/blood_coefDF_bloodEquiv_boot10k_noTriplets.csv",  
+        
+        "data/skin/dataframes/model6/skin_coefDF_bloodEquiv_boot10k_noTCXCCX.csv",
+        "data/germline/dataframes/model6/germline_coefDF_bloodEquiv_boot10k_noTCXCCX.csv",
+        "data/liver/dataframes/model6/liver_coefDF_bloodEquiv_boot10k_noTCXCCX.csv",
+        "data/blood/dataframes/model6/blood_coefDF_bloodEquiv_boot10k_noTCXCCX.csv", 
+        
+        "data/skin/dataframes/model6/skin_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv",
+        "data/germline/dataframes/model6/germline_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv",
+        "data/liver/dataframes/model6/liver_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv",
+        "data/blood/dataframes/model6/blood_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv", 
+        
         #SCATTER PLOT PREDICTION ON SELF        
-        "analysis/blood/plots/model4/scatter_blood_on_blood.pdf",
-        "analysis/liver/plots/model4/scatter_liver_on_liver.pdf",
-        "analysis/germline/plots/model4/scatter_germline_on_germline.pdf",
-        "analysis/skin/plots/model4/scatter_skin_on_skin.pdf",
+        #"analysis/blood/plots/model6/scatter_blood_on_blood.pdf",
+        #"analysis/liver/plots/model6/scatter_liver_on_liver.pdf",
+        #"analysis/germline/plots/model6/scatter_germline_on_germline.pdf",
+        #"analysis/skin/plots/model6/scatter_skin_on_skin.pdf",
+        
         #SCATTER PLOT PREDICTION ON OTHER 
-        "analysis/skin/plots/model4/scatter_skin_on_blood.pdf",
-        "analysis/skin/plots/model4/scatter_skin_on_germline.pdf",
-        "analysis/skin/plots/model4/scatter_skin_on_liver.pdf",
-        "analysis/blood/plots/model4/scatter_blood_on_skin.pdf",
-        "analysis/blood/plots/model4/scatter_blood_on_germline.pdf",
-        "analysis/blood/plots/model4/scatter_blood_on_liver.pdf",
-        "analysis/germline/plots/model4/scatter_germline_on_skin.pdf",
-        "analysis/germline/plots/model4/scatter_germline_on_blood.pdf",
-        "analysis/germline/plots/model4/scatter_germline_on_liver.pdf",
-        "analysis/germline/plots/model4/scatter_germline_on_liver.pdf",
-        "analysis/liver/plots/model4/scatter_liver_on_blood.pdf",
-        "analysis/liver/plots/model4/scatter_liver_on_skin.pdf",
-        "analysis/liver/plots/model4/scatter_liver_on_germline.pdf",
+        #"analysis/skin/plots/model6/scatter_skin_on_blood.pdf",
+        #"analysis/skin/plots/model6/scatter_skin_on_germline.pdf",
+        #"analysis/skin/plots/model6/scatter_skin_on_liver.pdf",
+        #"analysis/blood/plots/model6/scatter_blood_on_skin.pdf",
+        #"analysis/blood/plots/model6/scatter_blood_on_germline.pdf",
+        #"analysis/blood/plots/model6/scatter_blood_on_liver.pdf",
+        #"analysis/germline/plots/model6/scatter_germline_on_skin.pdf",
+        #"analysis/germline/plots/model6/scatter_germline_on_blood.pdf",
+        #"analysis/germline/plots/model6/scatter_germline_on_liver.pdf",
+        #"analysis/germline/plots/model6/scatter_germline_on_liver.pdf",
+        #"analysis/liver/plots/model6/scatter_liver_on_blood.pdf",
+        #"analysis/liver/plots/model6/scatter_liver_on_skin.pdf",
+        #"analysis/liver/plots/model6/scatter_liver_on_germline.pdf",
+        
         #COEF COMPARISON SCATTER PLOT 
-        "analysis/global/plots/model4/coefScatter_blood_on_skin.pdf",
-        "analysis/global/plots/model4/coefScatter_blood_on_germline.pdf",
-        "analysis/global/plots/model4/coefScatter_blood_on_liver.pdf",
-        "analysis/global/plots/model4/coefScatter_germline_on_skin.pdf",
-        "analysis/global/plots/model4/coefScatter_germline_on_skin.pdf",
-        "analysis/global/plots/model4/coefScatter_germline_on_liver.pdf",
-        "analysis/global/plots/model4/coefScatter_skin_on_liver.pdf",
+        #"analysis/global/plots/model6/coefScatter_blood_on_skin.pdf",
+        #"analysis/global/plots/model6/coefScatter_blood_on_germline.pdf",
+        #"analysis/global/plots/model6/coefScatter_blood_on_liver.pdf",
+        #"analysis/global/plots/model6/coefScatter_germline_on_skin.pdf",
+        #"analysis/global/plots/model6/coefScatter_germline_on_skin.pdf",
+        #"analysis/global/plots/model6/coefScatter_germline_on_liver.pdf",
+        #"analysis/global/plots/model6/coefScatter_skin_on_liver.pdf",
+        
         #PCA 
-        "analysis/global/plots/{model}/pca_allData_mutsAndNonMuts.pdf"
+        #"analysis/global/plots/model4/pca_allData_mutsAndNonMuts.pdf"
 
 #ANALYSIS RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rule pca: 
-    input: "data/blood/dataframes/model4/blood_forLiver_all_data_readyForPrediction.csv"
-    "data/liver/dataframes/model4/liver_all_data_readyForPrediction.csv"
-    "data/germline/dataframes/model4/germline_forLiver_all_data_readyForPrediction.csv"
-    "data/skin/dataframes/model4/skin_forLiver_all_data_readyForPrediction.csv"
+    input: 
+        "data/blood/dataframes/{model}/blood_all_data_readyForPrediction.csv", 
+        "data/liver/dataframes/{model}/liver_all_data_readyForPrediction.csv",
+        "data/germline/dataframes/{model}/germline_all_data_readyForPrediction.csv",
+        "data/skin/dataframes/{model}/skin_all_data_readyForPrediction.csv"
     output: "analysis/global/plots/{model}/pca_allData_mutsAndNonMuts.pdf"
     conda: "conda_Rplotting.yml"
-    shell:
+    shell: "Rscript --vanilla analysis/modules/pca/pca.R {wildcards.model}"  
 
 rule plotting_coef: 
     input: "data/{tissue}/dataframes/{model}/{tissue}_coefDF.csv",
-           #"data/{tissue_predOn}/dataframes/{model}/{tissue_predOn}_coefDF.csv"
+           "data/{tissue_predOn}/dataframes/{model}/{tissue_predOn}_coefDF.csv"
     output: "analysis/global/plots/{model}/coefScatter_{tissue}_on_{tissue_predOn}.pdf"
     conda: "conda_Rplotting.yml"
     shell: "Rscript --vanilla analysis/modules/plotting_coef/plotting_coef.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}"  
@@ -55,17 +102,59 @@ rule plotting_scatter:
     shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 400 {wildcards.tissue} {wildcards.tissue_predOn}"   
 
 rule predict: 
-    input: "data/{tissue}/objects/{model}/{tissue}_model.RData"
+    input: "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction.csv"
     output: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
     conda: "conda_RcreateDfModel_env.yml"
     shell: "Rscript --vanilla analysis/modules/create_model/predict.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}"
 
-rule createModel: 
+rule createModel_rmCpG: 
     input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
-    output:"data/{tissue}/objects/{model}/{tissue}_model.RData",
-           "data/{tissue}/dataframes/{model}/{tissue}_coefDF.csv"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_boot10k_noCpG.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_boot10k_noCpG.csv"
     conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model}"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R  {wildcards.tissue} {wildcards.model} 10000 FALSE FALSE TRUE FALSE "#equiv, remove_CpG, remove triplets, remove TCXCCX
+    
+rule createModel_rmTrip: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_boot10k_noTriplets.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_boot10k_noTriplets.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R  {wildcards.tissue} {wildcards.model} 10000 FALSE TRUE FALSE FALSE "#equiv, remove_CpG, remove triplets, remove TCXCCX
+
+rule createModel_bloodEquiv: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R  {wildcards.tissue} {wildcards.model} 10000 TRUE FALSE FALSE FALSE"#equiv, remove_CpG, remove triplets, remove TCXCCX
+
+rule createModel_bloodEquiv_rmCpG: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noCpG.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noCpG.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE TRUE FALSE FALSE"#equiv, remove_CpG, remove triplets, remove TCXCCX
+
+rule createModel_bloodEquiv_rmTCXCCX: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noTCXCCX.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noTCXCCX.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE FALSE FALSE TRUE"#equiv, remove_CpG, remove triplets, remove TCXCCX
+    
+rule createModel_bloodEquiv_rmCpG_rmTCXCCX: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noCpG_noTCXCCX.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE TRUE FALSE TRUE"#equiv, remove_CpG, remove triplets, remove TCXCCX
+    
+rule createModel_bloodEquiv_rmTrip: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noTriplets.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noTriplets.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE FALSE TRUE FALSE"#equiv, remove_CpG, remove triplets, remove TCXCCX
 
 #CREATE DF RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -89,7 +178,7 @@ rule createDF_blood:
     output: "data/blood/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py blood {wildcards.model} '[1,100,10000]';"
+    shell: "python analysis/modules/createDF/createDF.py blood {wildcards.model} '[0,100,10000]';"
         "grep 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf.txt >> data/blood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
         "grep 'discord' data/blood/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
         "grep -v 'discord' data/blood/dataframes/{wildcards.model}/predictorDf.txt > data/blood/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
@@ -114,7 +203,7 @@ rule createDF_liver:
     output: "data/liver/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py liver {wildcards.model} '[1,100,10000]';"
+    shell: "python analysis/modules/createDF/createDF.py liver {wildcards.model} '[0,100,10000]';"
         "grep 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf.txt >> data/liver/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
         "grep 'discord' data/liver/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
         "grep -v 'discord' data/liver/dataframes/{wildcards.model}/predictorDf.txt > data/liver/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
@@ -136,7 +225,7 @@ rule createDF_germline:
     output: "data/germline/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py germline {wildcards.model} '[1,100,10000]';"
+    shell: "python analysis/modules/createDF/createDF.py germline {wildcards.model} '[0,100,10000]';"
         "grep 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf.txt >> data/germline/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
         "grep 'discord' data/germline/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
         "grep -v 'discord' data/germline/dataframes/{wildcards.model}/predictorDf.txt > data/germline/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
@@ -155,7 +244,7 @@ rule createDF_skin:
     output: "data/skin/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py skin {wildcards.model} '[1,100,10000]';"
+    shell: "python analysis/modules/createDF/createDF.py skin {wildcards.model} '[0,100,10000]';"
         "grep 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf.txt >> data/skin/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
         "grep 'discord' data/skin/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
         "grep -v 'discord' data/skin/dataframes/{wildcards.model}/predictorDf.txt > data/skin/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
@@ -164,6 +253,11 @@ rule createDF_skin:
 
 
 #LIVER TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+rule liver_ctcf_downloadWrangle:
+    output: "data/liver/track_data/ctcf/ctcf.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/test.sh liver ctcf ENCFF005YBS.bigWig https://www.encodeproject.org/files/ENCFF005YBS/@@download/ENCFF005YBS.bigWig"
 
 rule liver_methylation_downloadWrangle:
     output: "data/liver/track_data/methylation/methylation.bed.gz"
@@ -203,6 +297,11 @@ rule liver_transcription_downloadWrangle:
         
 #SKIN TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+rule skin_ctcf_downloadWrangle:
+    output: "data/skin/track_data/ctcf/ctcf.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/test.sh skin ctcf ENCFF848HOS.bigWig https://www.encodeproject.org/files/ENCFF848HOS/@@download/ENCFF848HOS.bigWig"
+
 rule skin_methylation_downloadWrangle:
     output: "data/skin/track_data/methylation/methylation.bed.gz"
     conda: "conda_snakeSomMut_env.yml"
@@ -210,6 +309,11 @@ rule skin_methylation_downloadWrangle:
 
 
 #GERMLINE TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
+
+rule germline_ctcf_downloadWrangle:
+    output: "data/germline/track_data/ctcf/ctcf.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/test.sh germline ctcf ENCFF883KMQ.bigWig https://www.encodeproject.org/files/ENCFF883KMQ/@@download/ENCFF883KMQ.bigWig"
 
 rule germline_methylation_downloadWrangle:
     output: "data/germline/track_data/methylation/methylation.bed.gz"
@@ -231,6 +335,11 @@ rule germline_txn_download:
 
 #BLOOD TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  
+rule blood_ctcf_downloadWrangle:
+    output: "data/blood/track_data/ctcf/ctcf.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/test.sh blood ctcf !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" 
+
 rule blood_mut_download:
     input: "analysis/blood/mutations/DSMNC_list_all_files_blood.csv"
     output: "data/blood/mutations/all_blood_mutations.txt"
