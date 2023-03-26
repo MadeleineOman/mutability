@@ -12,12 +12,14 @@ n_bootstrap = as.integer(args [3])
 equiv_toLowest = args[4]
 exclude_CpG = args[5]
 exclude_triplet = args[6]
-# tissue = "blood"
+exclude_TCX_CCX = args[7]
+# tissue = "skin"
 # model_name = "model6"
-# n_bootstrap = 1000
+# n_bootstrap = 10000
 # equiv_toLowest=TRUE
 # exclude_CpG=FALSE
-# exclude_triplet=TRUE
+# exclude_triplet=FALSE
+# exclude_TCX_CCX = TRUE
 
 tmp_file_path = ""
 options(warn=1)
@@ -27,6 +29,8 @@ model_desc_modify = ""
 #import the data 
 input_filePath = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/predictorDf.txt",sep="")
 all_data <- read.table(input_filePath, header = TRUE,sep="\t")
+
+
 
 if (equiv_toLowest==TRUE){
     blood_nrow = nrow(read.table(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/predictorDf.txt",sep=""),header = TRUE,sep="\t"))
@@ -38,16 +42,19 @@ if (n_bootstrap==1000){
 } else if (n_bootstrap==10000){
     model_desc_modify = paste(model_desc_modify,"_boot10k",sep="")
 }
-print(model_desc_modify)
-
 if (exclude_CpG==TRUE){
     all_data <-all_data[!str_detect(all_data$triplet,"CG"),]
     model_desc_modify = paste(model_desc_modify,"_noCpG",sep="")}
+if (exclude_TCX_CCX==TRUE){
+    model_desc_modify = paste(model_desc_modify,"_noTCX_CCX",sep="")}
+
+
 print(summary(as.factor(all_data$triplet)))
 if (exclude_triplet==TRUE){
     all_data <- all_data[,!(names(all_data) %in% c('triplet'))]
     model_desc_modify = paste(model_desc_modify,"_noTriplets",sep="")}
-print(colnames(all_data))
+print(model_desc_modify)
+#print(colnames(all_data))
                             
 error_output_file = paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_create_model_text_output",model_desc_modify,".txt",sep="")
 cat("output for the create_model notebook",file=error_output_file,sep="\n")
@@ -66,7 +73,7 @@ all_data$annotation <- gsub("protein_binding","not_transcribed",all_data$annotat
 
 #removing unamppable points 
 mappable_mut_summary <- all_data %>% 
-        group_by(mappability,mutation_status)%>%
+    group_by(mappability,mutation_status)%>%
     summarise(count=n())
 unmapped_muts = (filter(mappable_mut_summary, (mappability == "not")&(mutation_status == 1))$count)
 unmapped_nonMuts = (filter(mappable_mut_summary, (mappability == "not")&(mutation_status == 0))$count)
@@ -83,6 +90,15 @@ all_data <- all_data %>%
 all_data <- all_data[,!(names(all_data) %in% c('Apercent.0','Gpercent.0','Cpercent.0','Tpercent.0',
                                        'Apercent.100','Gpercent.100','Cpercent.100','Tpercent.100',
                                        'Apercent.10000','Gpercent.10000','Cpercent.10000','Tpercent.10000'))]
+
+#editing the triplets 
+if (exclude_triplet==FALSE){
+    all_data$triplet <- toupper(all_data$triplet)
+    #filter for rows that dont have NNN as the triplet --> write the details to file 
+    cat(paste(nrow(all_data[all_data$triplet == "NNN",]), "rows removed due to N in triplet, ",sep=" "),file=error_output_file,sep="\n",append=TRUE)
+    all_data <- all_data[all_data$triplet != "NNN",]
+    cat(paste(nrow(all_data),"rows left",sep=" "),file=error_output_file,sep="\n",append=TRUE)
+}
 
 
 #create df to test coverage in the methylation download notebook 
@@ -146,14 +162,7 @@ all_data <- all_data[,!(names(all_data) %in% c("site","methylation_precent.0","m
 all_data <- all_data[!(is.na(all_data$methylable)),] #getting rid of the methylation nas 
 
 
-#editing the triplets 
-if (exclude_triplet==FALSE){
-    all_data$triplet <- toupper(all_data$triplet)
-    #filter for rows that dont have NNN as the triplet --> write the details to file 
-    cat(paste(nrow(all_data[all_data$triplet == "NNN",]), "rows removed due to N in triplet, ",sep=" "),file=error_output_file,sep="\n",append=TRUE)
-    all_data <- all_data[all_data$triplet != "NNN",]
-    cat(paste(nrow(all_data),"rows left",sep=" "),file=error_output_file,sep="\n",append=TRUE)
-}
+
 
 #how many mutations and sites 
 #printing the mutation ratio to file 
@@ -178,6 +187,10 @@ if (exclude_triplet==FALSE){
     all_data$triplet <- unlist(lapply(as.character(all_data$triplet),rc_removeAG)) #need unlistto turn the list into a vector 
 }
 
+if (exclude_TCX_CCX==TRUE){
+    all_data <-all_data[!str_detect(all_data$triplet,"[TC]C[ATCG]"),]}
+
+
 #check for problems with levels / column tye etc. 
 if (exclude_triplet==FALSE){
     all_data$triplet <- as.character(all_data$triplet) #need to convert to char so the as.factor properly reducs to 64 levels after the removal of 'triplets" longer than 3
@@ -195,7 +208,7 @@ all_data$annotation <- gsub("protein_binding","not_transcribed",all_data$annotat
 
 #factorizing the columns 
 all_data$mutation_status <- as.factor(all_data$mutation_status)
-if (exclude_triplet==FALSE){all_data$triplet <- as.factor(all_data$triplet)}
+if (exclude_triplet==FALSE){all_data$triplet <- as.factor(as.character(all_data$triplet))}
 all_data$Chromosome <- as.factor(all_data$Chromosome)
 all_data$annotation <- as.factor(all_data$annotation)
 all_data$CpGisland <- as.factor(all_data$CpGisland)
@@ -204,8 +217,14 @@ all_data$methylable <- as.factor(all_data$methylable)
 #checking that the factor variables are correct (mutation status, triplets, chroms) --> will raise error if not true 
 stopifnot(length(levels(all_data$mutation_status)) == 2)
 if (exclude_triplet==FALSE){
-    if(exclude_CpG==FALSE){stopifnot(length(levels(all_data$triplet))==32)}
-    else {stopifnot(length(levels(all_data$triplet))==28)}}
+    if(exclude_CpG==TRUE&exclude_TCX_CCX==FALSE){
+        stopifnot(length(levels(all_data$triplet))==28)}
+    if(exclude_CpG==FALSE&exclude_TCX_CCX==TRUE){
+        stopifnot(length(levels(all_data$triplet))==24)}
+    if(exclude_CpG==TRUE&exclude_TCX_CCX==TRUE){
+        stopifnot(length(levels(all_data$triplet))==22)}
+    if(exclude_CpG==FALSE&exclude_TCX_CCX==FALSE){
+        stopifnot(length(levels(all_data$triplet))==32)}}
 stopifnot(length(levels(all_data$Chromosome))==22)
 stopifnot(length(levels(all_data$CpGisland))==3)
 stopifnot(length(levels(all_data$methylable))==2)
@@ -373,7 +392,7 @@ write.csv(coef_df_ordered,filename,row.names=FALSE)
 #my bootstrapping help https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
 coef_df<- as.data.frame("names" <- names(coef(model)))
 colnames(coef_df) <- c("name")
-paste("first",tissue,"bootstrap started",sep=" ")
+paste("first",tissue,model_desc_modify,"bootstrap started",sep=" ")
 plm <- Sys.time()
 for (i in 1:n_bootstrap){
     sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
@@ -399,7 +418,7 @@ write.csv(bootstrap_df,filename,row.names=FALSE)
 #REPEATF FOR THE SELF COMPARISON PLOT 
 coef_df<- as.data.frame("names" <- names(coef(model)))
 colnames(coef_df) <- c("name")
-paste(tissue,"second bootstrap started",sep=" ")
+paste(tissue,model_desc_modify,"second bootstrap started",sep=" ")
 plm <- Sys.time()
 for (i in 1:n_bootstrap){
     sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
@@ -481,7 +500,7 @@ if (tissue != "liver"){
     #my bootstrapping help https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
     coef_df<- as.data.frame("names" <- names(coef(model)))
     colnames(coef_df) <- c("name")
-    paste(tissue,"started forLiver bootstrap",sep=" ")
+    paste(tissue,model_desc_modify,"started forLiver bootstrap",sep=" ")
     plm <- Sys.time()
     for (i in 1:n_bootstrap){
         sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
@@ -493,7 +512,7 @@ if (tissue != "liver"){
         cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
         coef_df <- merge(coef_df,cur_coef_df)
     }
-    paste(tissue,"forLiver bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")
+    paste(tissue,model_desc_modify,"forLiver bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")
 
     #getting the mean and quantiles into a df for plotting 
     coef_df$mean_est <- rowMeans(coef_df[,2:n_bootstrap],na.rm=TRUE)
