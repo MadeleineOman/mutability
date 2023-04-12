@@ -9,17 +9,23 @@ args = commandArgs(trailingOnly=TRUE)
 tissue = args[1]
 model_name = args[2]
 n_bootstrap = as.integer(args [3])
-equiv_toLowest = args[4]
-exclude_CpG = args[5]
-exclude_triplet = args[6]
-exclude_TCX_CCX = args[7]
-# tissue = "skin"
-# model_name = "model6"
-# n_bootstrap = 10000
+equiv_toLowest=FALSE
+exclude_CpG=FALSE
+exclude_triplet=FALSE
+exclude_TCX_CCX = FALSE
+if ("equiv_toLowest" %in% args){
+    equiv_toLowest=TRUE
+    print("equiv_toLowest=TRUE")}
+if ("exclude_CpG" %in% args){exclude_CpG=TRUE}
+if ("exclude_TCX_CCX" %in% args){exclude_TCX_CCX=TRUE}
+if ("exclude_triplet" %in% args){exclude_triplet=TRUE}
+# tissue = "liver"
+# model_name = "model7"
+# n_bootstrap = 100
 # equiv_toLowest=TRUE
-# exclude_CpG=FALSE
+# exclude_CpG=FALSE 
 # exclude_triplet=FALSE
-# exclude_TCX_CCX = TRUE
+# exclude_TCX_CCX = FALSE
 
 tmp_file_path = ""
 options(warn=1)
@@ -33,7 +39,8 @@ all_data <- read.table(input_filePath, header = TRUE,sep="\t")
 
 
 if (equiv_toLowest==TRUE){
-    blood_nrow = nrow(read.table(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/predictorDf.txt",sep=""),header = TRUE,sep="\t"))
+#     blood_nrow = nrow(read.table(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/predictorDf.txt",sep=""),header = TRUE,sep="\t"))
+    blood_nrow = 17814
     all_data <-all_data[sample(nrow(all_data), blood_nrow), ]
     model_desc_modify = paste(model_desc_modify,"_bloodEquiv",sep="")}
 print(nrow(all_data))
@@ -49,13 +56,14 @@ if (exclude_TCX_CCX==TRUE){
     model_desc_modify = paste(model_desc_modify,"_noTCX_CCX",sep="")}
 
 
-print(summary(as.factor(all_data$triplet)))
+# print(summary(as.factor(all_data$triplet)))
 if (exclude_triplet==TRUE){
     all_data <- all_data[,!(names(all_data) %in% c('triplet'))]
     model_desc_modify = paste(model_desc_modify,"_noTriplets",sep="")}
 print(model_desc_modify)
-#print(colnames(all_data))
-                            
+print(colnames(all_data))
+
+#setting up the error output file 
 error_output_file = paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_create_model_text_output",model_desc_modify,".txt",sep="")
 cat("output for the create_model notebook",file=error_output_file,sep="\n")
 
@@ -68,7 +76,7 @@ cat("output for the create_model notebook",file=error_output_file,sep="\n")
 #          Transcription.0=Transcription.1,recombination.0=recombination.1,Repeats.0=Repeats.1,DNAse.0=DNAse.1,laminB1.0=laminB1.1)
 # }
 
-#
+#remove the protein binding flag (if it exists in the version of the predictor data: not existant in later versions)
 all_data$annotation <- gsub("protein_binding","not_transcribed",all_data$annotation)#there are so few protein binding sites that we may as well omit 
 
 #removing unamppable points 
@@ -190,7 +198,6 @@ if (exclude_triplet==FALSE){
 if (exclude_TCX_CCX==TRUE){
     all_data <-all_data[!str_detect(all_data$triplet,"[TC]C[ATCG]"),]}
 
-
 #check for problems with levels / column tye etc. 
 if (exclude_triplet==FALSE){
     all_data$triplet <- as.character(all_data$triplet) #need to convert to char so the as.factor properly reducs to 64 levels after the removal of 'triplets" longer than 3
@@ -291,9 +298,9 @@ non_num_preds = c("mutation_status")
 preds_to_standardize<-!(names(all_data) %in% non_num_preds)#yes i have to do this again because i chnaged the order of the mutant column 
 all_data[, preds_to_standardize]<- (as.data.frame(scale(all_data[, preds_to_standardize],center=TRUE,scale=TRUE)))
 
+
 sample_sites_train <- sample (1:nrow(all_data), nrow(all_data)/2) 
 sample_sites_test = c(1:nrow(all_data))[-sample_sites_train]
-
 
 #creating and saving the corplot 
 # num_data <- na.omit(subset(all_data, select=-c(Chromosome,triplet,annotation,CpGisland))) --> dont need this anymore as correlating ther categoricals too 
@@ -352,11 +359,11 @@ num_cor <- cor(num_data)
 filename = paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_corPlot_pruned",model_desc_modify,".pdf", sep="")
 pdf(filename)
 corrplot(num_cor,method = "color",type="upper",number.cex=0.5,tl.cex = 0.5,main=tissue)
-dev.off() 
+dev.off()
                           
 #MAKING A MODEL ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 model <- glm(mutation_status~., data=all_data[sample_sites_train,],family="binomial")
-
+                          
 #saving the model variables 
 filename = paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_model",model_desc_modify,".RData", sep="") #model 
 save(model, file=filename)
@@ -381,84 +388,113 @@ dev.off()
 coefs <- coef(summary(model))
 coef_df <- as.data.frame(coefs)
 colnames(coef_df) <- c("value","std_err","z_val","p_val")
+coef_df$t_stat <- coef_df$value/coef_df$std_err
 coef_df<- tibble::rownames_to_column(coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
 coef_df_ordered <- coef_df[order(-coef_df$value),]#https://www.statmethods.net/management/sorting.html
 filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_coefDF",model_desc_modify,".csv",sep="")#this sep is for the filename string
 write.csv(coef_df_ordered,filename,row.names=FALSE)
-                          
 
+Tstat_df = coef_df
                           
 #BOOTSTRAP                         
 #my bootstrapping help https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
-coef_df<- as.data.frame("names" <- names(coef(model)))
-colnames(coef_df) <- c("name")
-paste("first",tissue,model_desc_modify,"bootstrap started",sep=" ")
-plm <- Sys.time()
-for (i in 1:n_bootstrap){
-    sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
-    cur_data <- all_data[sample_sites_train_cur,]
-    model<- glm(mutation_status~., data=cur_data,family="binomial")
+if (n_bootstrap>0){
+    coef_df<- as.data.frame("names" <- names(coef(model)))
+    colnames(coef_df) <- c("name")
+    paste("first",tissue,"bootstrap started",sep=" ")
+    plm <- Sys.time()
+    for (i in 1:n_bootstrap){
+        sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
+        cur_data <- all_data[sample_sites_train_cur,]
+        model<- glm(mutation_status~., data=cur_data,family="binomial")
 
-    cur_coef_df <- as.data.frame(coef(model))
-    colnames(cur_coef_df) <- c(paste("value_",i,sep=""))
-    cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
-    coef_df <- merge(coef_df,cur_coef_df)
-}
-paste("first",tissue,model_desc_modify,"bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")  
-string_to_print <- paste("first",tissue,model_desc_modify,"bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")  
-cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
-#getting the mean and quantiles into a df for plotting 
-coef_df$mean_est <- rowMeans(coef_df[,2:n_bootstrap],na.rm=TRUE)
-quantile_df <- data.frame(coef_df$name,t(apply(coef_df[,2:n_bootstrap],1,quantile,c(0.025,0.975),na.rm=TRUE)))#https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
-colnames(quantile_df) <- c("name","quant025","quant975")
-bootstrap_df<- merge(coef_df,quantile_df)
-bootstrap_df <- bootstrap_df[order(-bootstrap_df$mean_est),]#
-filename <- paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_coefDF_bootstrap",model_desc_modify,".csv",sep="")
-write.csv(bootstrap_df,filename,row.names=FALSE)
-#REPEATF FOR THE SELF COMPARISON PLOT 
-coef_df<- as.data.frame("names" <- names(coef(model)))
-colnames(coef_df) <- c("name")
-paste(tissue,model_desc_modify,"second bootstrap started",sep=" ")
-plm <- Sys.time()
-for (i in 1:n_bootstrap){
-    sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
-    cur_data <- all_data[sample_sites_train_cur,]
-    model<- glm(mutation_status~., data=cur_data,family="binomial")
+        cur_coef_df <- as.data.frame(coef(model))
+        colnames(cur_coef_df) <- c(paste("value_",i,sep=""))
+        cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
+        coef_df <- merge(coef_df,cur_coef_df)
+        
+        cur_Tstat_df <- as.data.frame(coef(summary(model)))#extarct values from model summary into df 
+        colnames(cur_Tstat_df) <- c(paste("value_",i,sep=""),paste("std_err_",i,sep=""),paste("z_val_",i,sep=""),paste("p_val_",i,sep=""))#rename cols 
+        cur_Tstat_df[[paste("t_stat_",i,sep="")]] <- cur_Tstat_df[[paste("value_",i,sep="")]]/cur_Tstat_df[[paste("std_err_",i,sep="")]] #create tsts col 
+        cur_Tstat_df<- tibble::rownames_to_column(cur_Tstat_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
+        cur_Tstat_df<-cur_Tstat_df[,(names(cur_Tstat_df) %in% c("name",paste("t_stat_",i,sep="")))] #selecting name and tsat cols only 
+        Tstat_df <- merge(Tstat_df,cur_Tstat_df)
+    }
+    paste("first",tissue,model_desc_modify,"bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")  
+    string_to_print <- paste("first",tissue,model_desc_modify,"bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")  
+    cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
+    #getting the mean and quantiles into a df for plotting 
+    coef_df$mean_est <- rowMeans(coef_df[,2:n_bootstrap],na.rm=TRUE)
+    quantile_df <- data.frame(coef_df$name,t(apply(coef_df[,2:n_bootstrap],1,quantile,c(0.025,0.975),na.rm=TRUE)))#https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
+    colnames(quantile_df) <- c("name","quant025","quant975")
+    bootstrap_df<- merge(coef_df,quantile_df)
+    bootstrap_df <- bootstrap_df[order(-bootstrap_df$mean_est),]#
+    filename <- paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_coefDF_bootstrap",model_desc_modify,".csv",sep="")
+    write.csv(bootstrap_df,filename,row.names=FALSE)
+    #get summary for the t-statistic 
+    Tstat_df$mean_Tstat <- rowMeans(select(Tstat_df,contains("t_stat_")))
+    Tstat_df$stdDev_Tstat <- apply(select(Tstat_df,contains("t_stat_")), 1, sd)
+    Tstat_df$stdErr_Tstat<- Tstat_df$stdDev_Tstat/sqrt(n_bootstrap)
+    filename <- paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_Tstat_DF_bootstrap",model_desc_modify,".csv",sep="")
+    write.csv(Tstat_df,filename,row.names=FALSE)
+    #REPEATF FOR THE SELF COMPARISON PLOT 
+    coef_df<- as.data.frame("names" <- names(coef(model)))
+    colnames(coef_df) <- c("name")
+    Tstat_df = coef_df
+    paste(tissue,"second bootstrap started",sep=" ")
+    plm <- Sys.time()
+    for (i in 1:n_bootstrap){
+        sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
+        cur_data <- all_data[sample_sites_train_cur,]
+        model<- glm(mutation_status~., data=cur_data,family="binomial")
 
-    cur_coef_df <- as.data.frame(coef(model))
-    colnames(cur_coef_df) <- c(paste("value_",i,sep=""))
-    cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
-    coef_df <- merge(coef_df,cur_coef_df)
-}
-paste("second",tissue,model_desc_modify,"bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")  
-string_to_print <- paste("second",tissue,model_desc_modify,"bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")  
-cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)                      
-#getting the mean and quantiles into a df for plotting 
-coef_df$mean_est <- rowMeans(coef_df[,2:n_bootstrap],na.rm=TRUE)
-quantile_df <- data.frame(coef_df$name,t(apply(coef_df[,2:n_bootstrap],1,quantile,c(0.025,0.975),na.rm=TRUE)))#https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
-colnames(quantile_df) <- c("name","quant025","quant975")
-bootstrap_df<- merge(coef_df,quantile_df)
-bootstrap_df <- bootstrap_df[order(-bootstrap_df$mean_est),]#
-filename <- paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_coefDF_bootstrap",model_desc_modify,"1.csv",sep="")
-write.csv(bootstrap_df,filename,row.names=FALSE)
-                          
-                          
-#distribtuion analysis 
-sign_preds = replicate(nrow(bootstrap_df),"not")
-sign_preds[bootstrap_df$quant025 * bootstrap_df$quant975 >0 ] = "yes"
-bootstrap_df$significant <- sign_preds
-num_cols <- colnames(all_data[,unlist(lapply(all_data, is.numeric), use.names = FALSE)])#https://stackoverflow.com/questions/5863097/selecting-only-numeric-columns-from-a-data-frame
-#making the pllots 
-pdf(paste(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_predictor_distributions_unCor_includedModel",model_desc_modify,".pdf", sep="")))
-for (cur_pred in num_cols){
-    cur_data = all_data[,cur_pred]
-    title = paste(cur_pred,"\nsd:",round(sd(cur_data),digits=2), " mean:", round(mean(cur_data),digits=2), " median:",round(median(cur_data),digits=2),
-                  " min,max:",round(min(cur_data),digits=5),",",max(round(cur_data,digits=2)),
-                  "\nboostrap mean est:",round(filter(bootstrap_df, name==cur_pred)$mean_est,digits=5), "singificant?:", filter(bootstrap_df, name==cur_pred)$significant)
-    hist(cur_data, main=title,breaks=20)
-}
-dev.off()
-                          
+        cur_coef_df <- as.data.frame(coef(model))
+        colnames(cur_coef_df) <- c(paste("value_",i,sep=""))
+        cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
+        coef_df <- merge(coef_df,cur_coef_df)
+        
+        cur_Tstat_df <- as.data.frame(coef(summary(model)))#extarct values from model summary into df 
+        colnames(cur_Tstat_df) <- c(paste("value_",i,sep=""),paste("std_err_",i,sep=""),paste("z_val_",i,sep=""),paste("p_val_",i,sep=""))#rename cols 
+        cur_Tstat_df[[paste("t_stat_",i,sep="")]] <- cur_Tstat_df[[paste("value_",i,sep="")]]/cur_Tstat_df[[paste("std_err_",i,sep="")]] #create tsts col 
+        cur_Tstat_df<- tibble::rownames_to_column(cur_Tstat_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
+        cur_Tstat_df<-cur_Tstat_df[,(names(cur_Tstat_df) %in% c("name",paste("t_stat_",i,sep="")))] #selecting name and tsat cols only 
+        Tstat_df <- merge(Tstat_df,cur_Tstat_df)
+    }
+    paste("second",tissue,model_desc_modify,"bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")  
+    string_to_print <- paste("second",tissue,model_desc_modify,"bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")  
+    cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)                      
+    #getting the mean and quantiles into a df for plotting 
+    coef_df$mean_est <- rowMeans(coef_df[,2:n_bootstrap],na.rm=TRUE)
+    quantile_df <- data.frame(coef_df$name,t(apply(coef_df[,2:n_bootstrap],1,quantile,c(0.025,0.975),na.rm=TRUE)))#https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
+    colnames(quantile_df) <- c("name","quant025","quant975")
+    bootstrap_df<- merge(coef_df,quantile_df)
+    bootstrap_df <- bootstrap_df[order(-bootstrap_df$mean_est),]#
+    filename <- paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_coefDF_bootstrap",model_desc_modify,"1.csv",sep="")
+    write.csv(bootstrap_df,filename,row.names=FALSE)
+    #get summary for the t-statistic 
+    Tstat_df$mean_Tstat <- rowMeans(select(Tstat_df,contains("t_stat_")))
+    Tstat_df$stdDev_Tstat <- apply(select(Tstat_df,contains("t_stat_")), 1, sd)
+    Tstat_df$stdErr_Tstat<- Tstat_df$stdDev_Tstat/sqrt(n_bootstrap)
+    filename <- paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_Tstat_DF_bootstrap",model_desc_modify,"1.csv",sep="")
+    write.csv(Tstat_df,filename,row.names=FALSE)
+
+
+    #distribtuion analysis 
+    sign_preds = replicate(nrow(bootstrap_df),"not")
+    sign_preds[bootstrap_df$quant025 * bootstrap_df$quant975 >0 ] = "yes"
+    bootstrap_df$significant <- sign_preds
+    num_cols <- colnames(all_data[,unlist(lapply(all_data, is.numeric), use.names = FALSE)])#https://stackoverflow.com/questions/5863097/selecting-only-numeric-columns-from-a-data-frame
+    #making the pllots 
+    pdf(paste(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_predictor_distributions_unCor_includedModel",model_desc_modify,".pdf", sep="")))
+    for (cur_pred in num_cols){
+        cur_data = all_data[,cur_pred]
+        title = paste(cur_pred,"\nsd:",round(sd(cur_data),digits=2), " mean:", round(mean(cur_data),digits=2), " median:",round(median(cur_data),digits=2),
+                      " min,max:",round(min(cur_data),digits=5),",",max(round(cur_data,digits=2)),
+                      "\nboostrap mean est:",round(filter(bootstrap_df, name==cur_pred)$mean_est,digits=5), "singificant?:", filter(bootstrap_df, name==cur_pred)$significant)
+        hist(cur_data, main=title,breaks=20)
+    }
+    dev.off()
+}                       
                           
 
 #CREATING MODELS FOR THE LIVER TISSUE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -498,50 +534,66 @@ if (tissue != "liver"){
 
     #BOOTSTRAP 
     #my bootstrapping help https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
-    coef_df<- as.data.frame("names" <- names(coef(model)))
-    colnames(coef_df) <- c("name")
-    paste(tissue,model_desc_modify,"started forLiver bootstrap",sep=" ")
-    plm <- Sys.time()
-    for (i in 1:n_bootstrap){
-        sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
-        cur_data <- all_data[sample_sites_train_cur,]
-        model<- glm(mutation_status~., data=cur_data,family="binomial")
+    if (n_bootstrap>0){
+        coef_df<- as.data.frame("names" <- names(coef(model)))
+        colnames(coef_df) <- c("name")
+        paste(tissue,"started forLiver bootstrap",sep=" ")
+        plm <- Sys.time()
+        for (i in 1:n_bootstrap){
+            sample_sites_train_cur <- sample(sample_sites_train,size=length(sample_sites_train),replace=TRUE)
+            cur_data <- all_data[sample_sites_train_cur,]
+            model<- glm(mutation_status~., data=cur_data,family="binomial")
 
-        cur_coef_df <- as.data.frame(coef(model))
-        colnames(cur_coef_df) <- c(paste("value_",i,sep=""))
-        cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
-        coef_df <- merge(coef_df,cur_coef_df)
-    }
-    paste(tissue,model_desc_modify,"forLiver bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")
+            cur_coef_df <- as.data.frame(coef(model))
+            colnames(cur_coef_df) <- c(paste("value_",i,sep=""))
+            cur_coef_df<- tibble::rownames_to_column(cur_coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
+            coef_df <- merge(coef_df,cur_coef_df)
+            
+            cur_Tstat_df <- as.data.frame(coef(summary(model)))#extarct values from model summary into df 
+            colnames(cur_Tstat_df) <- c(paste("value_",i,sep=""),paste("std_err_",i,sep=""),paste("z_val_",i,sep=""),paste("p_val_",i,sep=""))#rename cols 
+            cur_Tstat_df[[paste("t_stat_",i,sep="")]] <- cur_Tstat_df[[paste("value_",i,sep="")]]/cur_Tstat_df[[paste("std_err_",i,sep="")]] #create tsts col 
+            cur_Tstat_df<- tibble::rownames_to_column(cur_Tstat_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
+            cur_Tstat_df<-cur_Tstat_df[,(names(cur_Tstat_df) %in% c("name",paste("t_stat_",1,sep="")))] #selecting name and tsat cols only 
+            Tstat_df <- merge(Tstat_df,cur_Tstat_df)
+        }
+        paste(tissue,"forLiver bootstrap took",Sys.time()-plm,"s/mins/hs, you guess",sep=" ")
 
-    #getting the mean and quantiles into a df for plotting 
-    coef_df$mean_est <- rowMeans(coef_df[,2:n_bootstrap],na.rm=TRUE)
-    quantile_df <- data.frame(coef_df$name,t(apply(coef_df[,2:n_bootstrap],1,quantile,c(0.025,0.975),na.rm=TRUE)))#https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
-    colnames(quantile_df) <- c("name","quant025","quant975")
-    bootstrap_df<- merge(coef_df,quantile_df)
-    filename <- paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_forLiver_coefDF_bootstrap",model_desc_modify,".csv",sep="")
-    write.csv(bootstrap_df,filename,row.names=FALSE)
+        #getting the mean and quantiles into a df for plotting 
+        coef_df$mean_est <- rowMeans(coef_df[,2:n_bootstrap],na.rm=TRUE)
+        quantile_df <- data.frame(coef_df$name,t(apply(coef_df[,2:n_bootstrap],1,quantile,c(0.025,0.975),na.rm=TRUE)))#https://stackoverflow.com/questions/54749641/bootstrapping-with-glm-model
+        colnames(quantile_df) <- c("name","quant025","quant975")
+        bootstrap_df<- merge(coef_df,quantile_df)
+        filename <- paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_forLiver_coefDF_bootstrap",model_desc_modify,".csv",sep="")
+        write.csv(bootstrap_df,filename,row.names=FALSE)
+        #get summary for the t-statistic 
+        Tstat_df$mean_Tstat <- rowMeans(select(Tstat_df,contains("t_stat_")))
+        Tstat_df$stdDev_Tstat <- apply(select(Tstat_df,contains("t_stat_")), 1, sd)
+        Tstat_df$stdErr_Tstat<- Tstat_df$stdDev_Tstat/sqrt(n_bootstrap)
+        filename <- paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_forLiver_Tstat_DF_bootstrap",model_desc_modify,".csv",sep="")
+        write.csv(Tstat_df,filename,row.names=FALSE)
 
-    #creating a significant column 
-    sign_preds = replicate(nrow(bootstrap_df),"not")
-    sign_preds[bootstrap_df$quant025 * bootstrap_df$quant975 >0 ] = "yes"
-    bootstrap_df$significant <- sign_preds
+        #creating a significant column 
+        sign_preds = replicate(nrow(bootstrap_df),"not")
+        sign_preds[bootstrap_df$quant025 * bootstrap_df$quant975 >0 ] = "yes"
+        bootstrap_df$significant <- sign_preds
 
-    num_cols <- colnames(all_data[,unlist(lapply(all_data, is.numeric), use.names = FALSE)])#https://stackoverflow.com/questions/5863097/selecting-only-numeric-columns-from-a-data-frame
-    #making the pllots 
-    pdf(paste(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_forLiver_predictor_distributions_unCor_includedModel",model_desc_modify,".pdf", sep="")))
-    for (cur_pred in num_cols){
-        cur_data = all_data[,cur_pred]
-        title = paste(cur_pred,"\nsd:",round(sd(cur_data),digits=2), " mean:", round(mean(cur_data),digits=2), " median:",round(median(cur_data),digits=2),
-                      " min,max:",round(min(cur_data),digits=5),",",max(round(cur_data,digits=2)),
-                      "\nboostrap mean est:",round(filter(bootstrap_df, name==cur_pred)$mean_est,digits=5), "significant?:", filter(bootstrap_df, name==cur_pred)$significant)
-        hist(cur_data, main=title,breaks=20)
-    }
-    dev.off()
-    #removing the 0s doesnt make any sense for standardized predictors 
-}   
+        num_cols <- colnames(all_data[,unlist(lapply(all_data, is.numeric), use.names = FALSE)])#https://stackoverflow.com/questions/5863097/selecting-only-numeric-columns-from-a-data-frame
+        #making the pllots 
+        pdf(paste(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_forLiver_predictor_distributions_unCor_includedModel",model_desc_modify,".pdf", sep="")))
+        for (cur_pred in num_cols){
+            cur_data = all_data[,cur_pred]
+            title = paste(cur_pred,"\nsd:",round(sd(cur_data),digits=2), " mean:", round(mean(cur_data),digits=2), " median:",round(median(cur_data),digits=2),
+                          " min,max:",round(min(cur_data),digits=5),",",max(round(cur_data,digits=2)),
+                          "\nboostrap mean est:",round(filter(bootstrap_df, name==cur_pred)$mean_est,digits=5), "significant?:", filter(bootstrap_df, name==cur_pred)$significant)
+            hist(cur_data, main=title,breaks=20)
+        }
+        dev.off()
+        #removing the 0s doesnt make any sense for standardized predictors 
+}   }
                           
 
+                          
+#PLOTTING  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #useful artifactf from back before this was all automated 
 #--> read in the bootstrap df without having to make it (long time) 
 # bootstrap_df <- read.csv("../../../data/blood/dataframes/model6/blood_coefDF_bootstrap_bloodEquiv_boot1k.csv")
@@ -556,68 +608,132 @@ if (tissue != "liver"){
 # cur_df <- cur_df[order(-cur_df$r_squared),]
 
 #wranging the dataframe produced from the bootstrap
-bootstrap_df <- bootstrap_df[order(bootstrap_df$mean_est),]
-bootstrap_df <- bootstrap_df %>%
-    mutate(type = case_when(        
-        str_detect(name, 'percent') ~ 'sequence',
-        str_detect(name, 'Chromosome') ~ 'sequence',
-        str_detect(name, 'Repeats') ~ 'sequence',
-        str_detect(name, 'site') ~ 'sequence',
-        str_detect(name, 'annot') ~ 'sequence',
-        str_detect(name, 'content') ~ 'sequence',
-        str_detect(name, 'CpG') ~ 'sequence',
-        
-        str_detect(name, 'triplet') ~ 'triplet',
-        
-        str_detect(name, 'DNAse') ~ 'tissue_specific',
-        str_detect(name, 'Transcription') ~ 'tissue_specific',
-        str_detect(name, 'H3k') ~ 'tissue_specific',
-        str_detect(name, 'methyl') ~ 'tissue_specific',
-        
-        str_detect(name, 'recomb') ~ 'global',
-        str_detect(name, 'lamin') ~ 'global',
-        str_detect(name, 'Replication') ~ 'global',
-        str_detect(name, 'dist_rep') ~ 'global',
-        
-        str_detect(name, 'Intercept') ~ 'intercept',
-    ))
+if (n_bootstrap>0){
+    bootstrap_df <- bootstrap_df %>%
+        mutate(type = case_when(        
+            str_detect(name, 'percent') ~ 'sequence',
+            str_detect(name, 'Chromosome') ~ 'sequence',
+            str_detect(name, 'Repeats') ~ 'sequence',
+            str_detect(name, 'site') ~ 'sequence',
+            str_detect(name, 'annot') ~ 'sequence',
+            str_detect(name, 'content') ~ 'sequence',
+            str_detect(name, 'CpG') ~ 'sequence',
 
-#GGPLOT PLOTTING THE COEF VALUES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#setting the colors for each predictor type 
-colors_ggplot <- c(sequence = "#7CAE00", triplet = "#C77CFF", global ='#F8766D', tissue_specific = '#00BFC4', intercept = "darkgrey")# https://stackoverflow.com/questions/17180115/manually-setting-group-colors-for-ggplot2
+            str_detect(name, 'triplet') ~ 'triplet',
 
-#bar plot of all the coefs 
-ggplot(bootstrap_df, aes(x = reorder(name, -mean_est), y = mean_est,fill=type))+
-    geom_bar(stat="identity")+
-    xlab(paste(tissue,"predictors",sep=" "))+
-    ylab("bootstrap mean estimate")+
-    #https://www.tutorialspoint.com/how-to-display-negative-labels-below-bars-in-barplot-using-ggplot2-in-r
-    geom_text(aes(y=mean_est+0.05*sign(mean_est),label=name),angle = 90,size=2)+#bars next to bar value 
-    #geom_text(aes(y=-0.05*sign(mean_est),label=name),angle = 90,size=2)+#labels next to the bottom (0 line) of bars 
-    theme(text = element_text(size=7),axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-#     scale_fill_manual(values=c(orange_ggplot,"darkgrey", green_ggplot, blue_ggplot,purple_ggplot))
-    scale_fill_manual(values=colors_ggplot)
- ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_coef_barplot_all",model_desc_modify,".pdf",sep=""))
-#bar plot of the top 20 predictors 
-bootstrap_df_top10 <- head(bootstrap_df[order(-abs(bootstrap_df$mean_est)),],n=20)
-ggplot(bootstrap_df_top10, aes(x = reorder(name, -abs(mean_est)), y = mean_est,fill=type))+
-    geom_bar(stat="identity")+
-    xlab(paste(tissue,"predictors",sep=" "))+
-    ylab("bootstrap mean estimate")+ 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1,size=14),axis.text.y = element_text(size=16))+
-    theme(axis.title=element_text(size=14))+
-    scale_fill_manual(values=colors_ggplot)+
-    geom_errorbar(aes(ymin=quant025, ymax=quant975), width=.2,position=position_dodge(.9),color="darkslategrey")+ #http://www.sthda.com/english/wiki/ggplot2-error-bars-quick-start-guide-r-software-and-data-visualization
-    theme(axis.text.x = element_text(face="bold", size=14, angle=45))
-ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_coef_barplot_top20",model_desc_modify,".pdf",sep=""))
-#bar plot of the top 10 bottom 10 
-bootstrap_df_top5bottom5 <- rbind(head(bootstrap_df,n=10),tail(bootstrap_df,n=10))
-ggplot(bootstrap_df_top5bottom5, aes(x = reorder(name, -mean_est), y = mean_est,fill=type))+
-    geom_bar(stat="identity")+
-    xlab(paste(tissue,"predictors",sep=" "))+
-    ylab("bootstrap mean estimate")+ 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1,size=14),axis.text.y = element_text(size=16))+
-    theme(axis.title=element_text(size=14))+
-    scale_fill_manual(values=colors_ggplot)+
-    geom_errorbar(aes(ymin=quant025, ymax=quant975), width=.2,position=position_dodge(.9),color="darkslategrey")
-ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_coef_barplot_top5Bottom5",model_desc_modify,".pdf",sep=""))
+            str_detect(name, 'DNAse') ~ 'tissue_specific',
+            str_detect(name, 'Transcription') ~ 'tissue_specific',
+            str_detect(name, 'H3k') ~ 'tissue_specific',
+            str_detect(name, 'methyl') ~ 'tissue_specific',
+
+            str_detect(name, 'recomb') ~ 'global',
+            str_detect(name, 'lamin') ~ 'global',
+            str_detect(name, 'Replication') ~ 'global',
+            str_detect(name, 'dist_rep') ~ 'global',
+
+            str_detect(name, 'Intercept') ~ 'intercept',
+        ))
+    
+    Tstat_df <- Tstat_df %>%
+        mutate(type = case_when(        
+            str_detect(name, 'percent') ~ 'sequence',
+            str_detect(name, 'Chromosome') ~ 'sequence',
+            str_detect(name, 'Repeats') ~ 'sequence',
+            str_detect(name, 'site') ~ 'sequence',
+            str_detect(name, 'annot') ~ 'sequence',
+            str_detect(name, 'content') ~ 'sequence',
+            str_detect(name, 'CpG') ~ 'sequence',
+
+            str_detect(name, 'triplet') ~ 'triplet',
+
+            str_detect(name, 'DNAse') ~ 'tissue_specific',
+            str_detect(name, 'Transcription') ~ 'tissue_specific',
+            str_detect(name, 'H3k') ~ 'tissue_specific',
+            str_detect(name, 'methyl') ~ 'tissue_specific',
+
+            str_detect(name, 'recomb') ~ 'global',
+            str_detect(name, 'lamin') ~ 'global',
+            str_detect(name, 'Replication') ~ 'global',
+            str_detect(name, 'dist_rep') ~ 'global',
+
+            str_detect(name, 'Intercept') ~ 'intercept',
+        ))
+
+    #GGPLOT PLOTTING THE COEF VALUES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #setting the colors for each predictor type 
+    colors_ggplot <- c(sequence = "#7CAE00", triplet = "#C77CFF", global ='#F8766D', tissue_specific = '#00BFC4', intercept = "darkgrey")# https://stackoverflow.com/questions/17180115/manually-setting-group-colors-for-ggplot2
+    
+    
+    #bar plot of all the coefs 
+    ggplot(bootstrap_df, aes(x = reorder(name, -mean_est), y = mean_est,fill=type))+
+        geom_bar(stat="identity")+
+        xlab(paste(tissue,"predictors",sep=" "))+
+        ylab("bootstrap mean estimate")+
+        #https://www.tutorialspoint.com/how-to-display-negative-labels-below-bars-in-barplot-using-ggplot2-in-r
+        geom_text(aes(y=mean_est+0.05*sign(mean_est),label=name),angle = 90,size=2)+#bars next to bar value 
+        #geom_text(aes(y=-0.05*sign(mean_est),label=name),angle = 90,size=2)+#labels next to the bottom (0 line) of bars 
+        theme(text = element_text(size=7),axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+    #     scale_fill_manual(values=c(orange_ggplot,"darkgrey", green_ggplot, blue_ggplot,purple_ggplot))
+        scale_fill_manual(values=colors_ggplot)
+     ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_coef_barplot_all",model_desc_modify,".pdf",sep=""))
+    #bar plot of the top 20 predictors 
+    bootstrap_df_top10 <- head(bootstrap_df[order(-abs(bootstrap_df$mean_est)),],n=20)
+    ggplot(bootstrap_df_top10, aes(x = reorder(name, -abs(mean_est)), y = mean_est,fill=type))+
+        geom_bar(stat="identity")+
+        xlab(paste(tissue,"predictors",sep=" "))+
+        ylab("bootstrap mean estimate")+ 
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1,size=14),axis.text.y = element_text(size=16))+
+        theme(axis.title=element_text(size=14))+
+        scale_fill_manual(values=colors_ggplot)+
+        geom_errorbar(aes(ymin=quant025, ymax=quant975), width=.2,position=position_dodge(.9),color="darkslategrey")+ #http://www.sthda.com/english/wiki/ggplot2-error-bars-quick-start-guide-r-software-and-data-visualization
+        theme(axis.text.x = element_text(face="bold", size=14, angle=45))
+    ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_coef_barplot_top20",model_desc_modify,".pdf",sep=""))
+    #bar plot of the top 10 bottom 10 
+    bootstrap_df_top5bottom5 <- rbind(head(bootstrap_df,n=10),tail(bootstrap_df,n=10))
+    ggplot(bootstrap_df_top5bottom5, aes(x = reorder(name, -mean_est), y = mean_est,fill=type))+
+        geom_bar(stat="identity")+
+        xlab(paste(tissue,"predictors",sep=" "))+
+        ylab("bootstrap mean estimate")+ 
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1,size=14),axis.text.y = element_text(size=16))+
+        theme(axis.title=element_text(size=14))+
+        scale_fill_manual(values=colors_ggplot)+
+        geom_errorbar(aes(ymin=quant025, ymax=quant975), width=.2,position=position_dodge(.9),color="darkslategrey")
+    ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_coef_barplot_top5Bottom5",model_desc_modify,".pdf",sep=""))
+
+    #NOW PLOTTING THE T STATTISTIC 
+    ggplot(Tstat_df, aes(x = reorder(name, -mean_Tstat	), y = mean_Tstat,fill=type))+
+        geom_bar(stat="identity")+
+        xlab(paste(tissue,"predictors",sep=" "))+
+        ylab("bootstrap mean T statistic")+
+        #https://www.tutorialspoint.com/how-to-display-negative-labels-below-bars-in-barplot-using-ggplot2-in-r
+        geom_text(aes(y=mean_Tstat+1.15*sign(mean_Tstat),label=name),angle = 90,size=2)+#bars next to bar value 
+        #geom_text(aes(y=-0.05*sign(mean_est),label=name),angle = 90,size=2)+#labels next to the bottom (0 line) of bars 
+        theme(text = element_text(size=7),axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+    #     scale_fill_manual(values=c(orange_ggplot,"darkgrey", green_ggplot, blue_ggplot,purple_ggplot))
+        scale_fill_manual(values=colors_ggplot)
+     ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_Tstat_barplot_all",model_desc_modify,".pdf",sep=""))
+        #bar plot of the top 20 predictors 
+    Tstat_df_top10 <- head(Tstat_df[order(-abs(Tstat_df$mean_Tstat)),],n=20)
+    ggplot(Tstat_df_top10, aes(x = reorder(name, -abs(mean_Tstat)), y = mean_Tstat,fill=type))+
+        geom_bar(stat="identity")+
+        xlab(paste(tissue,"predictors",sep=" "))+
+        ylab("bootstrap mean T statistic")+ 
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1,size=14),axis.text.y = element_text(size=16))+
+        theme(axis.title=element_text(size=14))+
+        scale_fill_manual(values=colors_ggplot)+
+        geom_errorbar(aes(ymin=mean_Tstat-stdErr_Tstat, ymax=mean_Tstat+stdErr_Tstat), width=.2,position=position_dodge(.9),color="darkslategrey")+ #http://www.sthda.com/english/wiki/ggplot2-error-bars-quick-start-guide-r-software-and-data-visualization
+        theme(axis.text.x = element_text(face="bold", size=14, angle=45))
+    ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_Tstat_barplot_top20",model_desc_modify,".pdf",sep=""))
+    #bar plot of the top 10 bottom 10 
+    Tstat_df_top5bottom5 <- rbind(head(Tstat_df,n=10),tail(Tstat_df,n=10))
+    ggplot(Tstat_df_top5bottom5, aes(x = reorder(name, -mean_Tstat), y = mean_Tstat,fill=type))+
+        geom_bar(stat="identity")+
+        xlab(paste(tissue,"predictors",sep=" "))+
+        ylab("bootstrap mean T statistic")+ 
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1,size=14),axis.text.y = element_text(size=16))+
+        theme(axis.title=element_text(size=14))+
+        scale_fill_manual(values=colors_ggplot)+
+        geom_errorbar(aes(ymin=mean_Tstat-stdErr_Tstat, ymax=mean_Tstat+stdErr_Tstat), width=.2,position=position_dodge(.9),color="darkslategrey")
+    ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_Tstat_barplot_top5Bottom5",model_desc_modify,".pdf",sep=""))
+    
+}
