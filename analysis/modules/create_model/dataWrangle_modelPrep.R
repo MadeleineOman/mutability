@@ -5,10 +5,20 @@ library(corrplot)
 library(rlang)
 library(ggplot2)
 
+
+# tissue = "germline"
+# model_name = "model8"
+equiv_toLowest=FALSE
+exclude_CpG=FALSE 
+exclude_triplet=FALSE
+exclude_TCX_CCX = FALSE
+NA_omit=TRUE
+mappability_col_keep = FALSE
+
 args = commandArgs(trailingOnly=TRUE)
 tissue = args[1]
 model_name = args[2]
-if ("_bloodEquiv" %in% args){ equiv_toLowest = TRUE
+if ("_equiv_toLowest" %in% args){ equiv_toLowest = TRUE
 }else{equiv_toLowest = FALSE }
 if ("_noTriplets" %in% args){exclude_triplet = TRUE
 }else{ exclude_triplet = FALSE }
@@ -18,15 +28,6 @@ if ("_noTCX_CCX" %in% args){ exclude_TCX_CCX = TRUE
 }else{ exclude_TCX_CCX = FALSE }
 if ("_allTissueSpecTracks" %in% args){allTissueSpecTracks = TRUE
 }else{allTissueSpecTracks = FALSE }
-
-# tissue = "blood"
-# model_name = "model7"
-# equiv_toLowest=FALSE
-# exclude_CpG=FALSE 
-# exclude_triplet=FALSE
-# exclude_TCX_CCX = FALSE
-# NA_omit=TRUE
-# mappability_col_keep = TRUE
 
 tmp_file_path = ""
 options(warn=1)
@@ -39,7 +40,7 @@ all_data <- read.table(input_filePath, header = TRUE,sep="\t")
 if (equiv_toLowest==TRUE){
     blood_nrow = nrow(read.table(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/predictorDf",model_desc_modify,".txt",sep=""),header = TRUE,sep="\t"))
     all_data <-all_data[sample(nrow(all_data), blood_nrow), ]
-    model_desc_modify = paste(model_desc_modify,"_bloodEquiv",sep="")}
+    model_desc_modify = paste(model_desc_modify,"_equiv_toLowest",sep="")}
 
 
 
@@ -53,7 +54,6 @@ if (exclude_TCX_CCX==TRUE){
 if (exclude_triplet==TRUE){
     all_data <- all_data[,!(names(all_data) %in% c('triplet'))]
     model_desc_modify = paste(model_desc_modify,"_noTriplets",sep="")}
-print(model_desc_modify)
 # print(colnames(all_data))
 
 #setting up the error output file 
@@ -115,7 +115,7 @@ for (b1 in bases){
 
 
 all_data <- all_data[,!str_detect(colnames(all_data),"methyl")]
-model_desc_modify = paste(model_desc_modify,"_noMethyl",sep="")
+# model_desc_modify = paste(model_desc_modify,"_noMethyl",sep="")
 
 
 
@@ -168,7 +168,6 @@ if (exclude_triplet==FALSE){all_data$triplet <- as.factor(as.character(all_data$
 all_data$Chromosome <- as.factor(all_data$Chromosome)
 all_data$annotation <- as.factor(all_data$annotation)
 all_data$CpGisland <- as.factor(all_data$CpGisland)
-# all_data$methylable <- as.factor(all_data$methylable)
 
 
 
@@ -185,7 +184,7 @@ if (exclude_triplet==FALSE){
         stopifnot(length(levels(all_data$triplet))==32)}}
 stopifnot(length(levels(all_data$Chromosome))==22)
 stopifnot(length(levels(all_data$CpGisland))==3)
-# stopifnot(length(levels(all_data$methylable))==2)
+
 
 #if germline, then edit out the female and make the male the default ( i used to include both female and male) 
 if (tissue == "germline"){
@@ -217,6 +216,9 @@ for (predictor_name in factor_names){
         n_muts <- as.integer(test_df[test_df[predictor_name]==cur_annot&test_df["mut_stat"]=="1"][3])#the third colun is the one with the count 
         string_to_print <-((paste(predictor_name,cur_annot,n_muts/n_sites,n_sites,sep=",")))
         cat(string_to_print,file=predictor_freqs_count_filePath,sep="\n",append=TRUE)}}
+
+
+#print("about to do the distributions")
 
 #distributions ~~~~~~~~~~~~~~~~~~~~~
 #getting only numeric 
@@ -251,6 +253,7 @@ all_data$mutation_status <- muts_col
 if (tissue=="global"){
     all_data$tissue <- tissue_col}
 
+#print("standardizing")
 #STANDARDIZING~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 non_num_preds = c("mutation_status")
 if (tissue=="global"){
@@ -260,8 +263,8 @@ preds_to_standardize<-!(names(all_data) %in% non_num_preds)#yes i have to do thi
 all_data[, preds_to_standardize]<- (as.data.frame(scale(all_data[, preds_to_standardize],center=TRUE,scale=TRUE)))
 
 
-
-#creating and saving the corplot 
+#CORRELATION ANALYSIS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#print("creating and saving the corplot ")
 # num_data <- na.omit(subset(all_data, select=-c(Chromosome,triplet,annotation,CpGisland))) --> dont need this anymore as correlating ther categoricals too 
 num_data <-all_data[,!(names(all_data) %in% non_num_preds)]
 num_data$mutation_status <- as.numeric(all_data$mutation_status)
@@ -271,8 +274,8 @@ pdf(filename)
 corrplot(num_cor,method = "color",type="upper",number.cex=0.5,tl.cex = 0.5,main=tissue)
 dev.off() 
 
-#CORRELATION ANALYSIS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#create the correlation df and 
+
+#print("create the correlation df and pruning for new corplot")
 cor_df <- as.data.frame(which(num_cor >=0.8,arr.ind=T))
 cor_df$col_name <- colnames(num_cor)[cor_df$col]  #insert tyhe col names 
 testFunc <- function(a, b) round(num_cor[a,b],digits=3)#https://stackoverflow.com/questions/15059076/call-apply-like-function-on-each-row-of-dataframe-with-multiple-arguments-from-e
@@ -331,8 +334,8 @@ inter_cor_vif_df <- data.frame(pred_names,adj_rsqs,vifs)
 inter_cor_vif_df<- inter_cor_vif_df[order(-vifs),]
 
 #saving the model variables 
-filename =paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_vif_",model_desc_modify,".csv", sep="")
-write.csv(all_data,filename) 
+filename =paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_vif",model_desc_modify,".csv", sep="")
+write.csv(inter_cor_vif_df,filename) 
 
 num_data <-all_data[,!(names(all_data) %in% non_num_preds)]
 num_data$mutation_status <- as.numeric(all_data$mutation_status)

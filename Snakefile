@@ -1,48 +1,24 @@
 
 rule all: 
-    input: 
+    input:              
+        #remake the model,  regular model st stat
+        #"data/blood/dataframes/model8/blood_coefDF_equiv_toLowest.csv",
+        "data/germline/dataframes/model8/germline_coefDF_equiv_toLowest.csv",
+        "data/liver/dataframes/model8/liver_coefDF_equiv_toLowest.csv",
+        #"data/skin/dataframes/model8/skin_coefDF_equiv_toLowest.csv",
+
+        #modelprep
+        #"data/blood/dataframes/model8/blood_all_data_readyForPrediction.csv",
+        #"data/germline/dataframes/model8/germline_all_data_readyForPrediction.csv",
+        #"data/liver/dataframes/model8/liver_all_data_readyForPrediction.csv",
+        #"data/skin/dataframes/model8/skin_all_data_readyForPrediction.csv",
+
         #new df 
-        "data/blood/dataframes/model6/predictorDf.txt",
-        "data/skin/dataframes/model6/predictorDf.txt",
-        "data/germline/dataframes/model6/predictorDf.txt",
-        "data/liver/dataframes/model6/predictorDf.txt",
-        
-        #remake the model 
-        "data/skin/dataframes/model6/skin_coefDF_boot10k_noCpG.csv",
-        "data/germline/dataframes/model6/germline_coefDF_boot10k_noCpG.csv",
-        "data/liver/dataframes/model6/liver_coefDF_boot10k_noCpG.csv",
-        "data/blood/dataframes/model6/blood_coefDF_boot10k_noCpG.csv",
-        
-        "data/skin/dataframes/model6/skin_coefDF_boot10k_noTriplets.csv",
-        "data/germline/dataframes/model6/germline_coefDF_boot10k_noTriplets.csv",
-        "data/liver/dataframes/model6/liver_coefDF_boot10k_noTriplets.csv",
-        "data/blood/dataframes/model6/blood_coefDF_boot10k_noTriplets.csv",
-        
-        "data/skin/dataframes/model6/skin_coefDF_bloodEquiv_boot10k.csv",
-        "data/germline/dataframes/model6/germline_coefDF_bloodEquiv_boot10k.csv",
-        "data/liver/dataframes/model6/liver_coefDF_bloodEquiv_boot10k.csv",
-        "data/blood/dataframes/model6/blood_coefDF_bloodEquiv_boot10k.csv",
-        
-        "data/skin/dataframes/model6/skin_coefDF_bloodEquiv_boot10k_noCpG.csv",
-        "data/germline/dataframes/model6/germline_coefDF_bloodEquiv_boot10k_noCpG.csv",
-        "data/liver/dataframes/model6/liver_coefDF_bloodEquiv_boot10k_noCpG.csv",
-        "data/blood/dataframes/model6/blood_coefDF_bloodEquiv_boot10k_noCpG.csv",
-        
-        "data/skin/dataframes/model6/skin_coefDF_bloodEquiv_boot10k_noTriplets.csv",
-        "data/germline/dataframes/model6/germline_coefDF_bloodEquiv_boot10k_noTriplets.csv",
-        "data/liver/dataframes/model6/liver_coefDF_bloodEquiv_boot10k_noTriplets.csv",
-        "data/blood/dataframes/model6/blood_coefDF_bloodEquiv_boot10k_noTriplets.csv",  
-        
-        "data/skin/dataframes/model6/skin_coefDF_bloodEquiv_boot10k_noTCXCCX.csv",
-        "data/germline/dataframes/model6/germline_coefDF_bloodEquiv_boot10k_noTCXCCX.csv",
-        "data/liver/dataframes/model6/liver_coefDF_bloodEquiv_boot10k_noTCXCCX.csv",
-        "data/blood/dataframes/model6/blood_coefDF_bloodEquiv_boot10k_noTCXCCX.csv", 
-        
-        "data/skin/dataframes/model6/skin_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv",
-        "data/germline/dataframes/model6/germline_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv",
-        "data/liver/dataframes/model6/liver_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv",
-        "data/blood/dataframes/model6/blood_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv", 
-        
+        "data/blood/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
+        "data/germline/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
+        "data/liver/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
+        "data/skin/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
+
         #SCATTER PLOT PREDICTION ON SELF        
         #"analysis/blood/plots/model6/scatter_blood_on_blood.pdf",
         #"analysis/liver/plots/model6/scatter_liver_on_liver.pdf",
@@ -78,6 +54,37 @@ rule all:
 
 #ANALYSIS RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+rule dataPrep:
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction{model_desc}.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/dataWrangle_modelPrep.R {wildcards.tissue} {wildcards.model} {wildcards.model_desc}" # 
+
+rule createModel: 
+    input: "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction{model_desc}.csv"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF{model_desc}.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 0 {wildcards.model_desc}" #tissue, model, n samples
+
+rule predict: 
+    input: "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction.csv"
+    output: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/predict.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}" 
+ 
+rule plotting_scatter: 
+    input: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
+    output: "analysis/{tissue}/plots/{model}/scatter_{tissue}_on_{tissue_predOn}.pdf"
+    conda: "conda_Rplotting.yml"
+    shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 400 {wildcards.tissue} {wildcards.tissue_predOn}"  
+
+rule plotting_coef: 
+    input: "data/{tissue}/dataframes/{model}/{tissue}_coefDF.csv",
+           "data/{tissue_predOn}/dataframes/{model}/{tissue_predOn}_coefDF.csv"
+    output: "analysis/global/plots/{model}/coefScatter_{tissue}_on_{tissue_predOn}.pdf"
+    conda: "conda_Rplotting.yml"
+    shell: "Rscript --vanilla analysis/modules/plotting_coef/plotting_coef.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}"   
+
 rule pca: 
     input: 
         "data/blood/dataframes/{model}/blood_all_data_readyForPrediction.csv", 
@@ -86,75 +93,9 @@ rule pca:
         "data/skin/dataframes/{model}/skin_all_data_readyForPrediction.csv"
     output: "analysis/global/plots/{model}/pca_allData_mutsAndNonMuts.pdf"
     conda: "conda_Rplotting.yml"
-    shell: "Rscript --vanilla analysis/modules/pca/pca.R {wildcards.model}"  
+    shell: "Rscript --vanilla analysis/modules/pca/pca.R {wildcards.model}" 
 
-rule plotting_coef: 
-    input: "data/{tissue}/dataframes/{model}/{tissue}_coefDF.csv",
-           "data/{tissue_predOn}/dataframes/{model}/{tissue_predOn}_coefDF.csv"
-    output: "analysis/global/plots/{model}/coefScatter_{tissue}_on_{tissue_predOn}.pdf"
-    conda: "conda_Rplotting.yml"
-    shell: "Rscript --vanilla analysis/modules/plotting_coef/plotting_coef.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}"  
 
-rule plotting_scatter: 
-    input: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
-    output: "analysis/{tissue}/plots/{model}/scatter_{tissue}_on_{tissue_predOn}.pdf"
-    conda: "conda_Rplotting.yml"
-    shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 400 {wildcards.tissue} {wildcards.tissue_predOn}"   
-
-rule predict: 
-    input: "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction.csv"
-    output: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
-    conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/predict.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}"
-
-rule createModel_rmCpG: 
-    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
-    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_boot10k_noCpG.csv",
-           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_boot10k_noCpG.csv"
-    conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R  {wildcards.tissue} {wildcards.model} 10000 FALSE FALSE TRUE FALSE "#equiv, remove_CpG, remove triplets, remove TCXCCX
-    
-rule createModel_rmTrip: 
-    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
-    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_boot10k_noTriplets.csv",
-           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_boot10k_noTriplets.csv"
-    conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R  {wildcards.tissue} {wildcards.model} 10000 FALSE TRUE FALSE FALSE "#equiv, remove_CpG, remove triplets, remove TCXCCX
-
-rule createModel_bloodEquiv: 
-    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
-    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k.csv",
-           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k.csv"
-    conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R  {wildcards.tissue} {wildcards.model} 10000 TRUE FALSE FALSE FALSE"#equiv, remove_CpG, remove triplets, remove TCXCCX
-
-rule createModel_bloodEquiv_rmCpG: 
-    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
-    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noCpG.csv",
-           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noCpG.csv"
-    conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE TRUE FALSE FALSE"#equiv, remove_CpG, remove triplets, remove TCXCCX
-
-rule createModel_bloodEquiv_rmTCXCCX: 
-    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
-    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noTCXCCX.csv",
-           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noTCXCCX.csv"
-    conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE FALSE FALSE TRUE"#equiv, remove_CpG, remove triplets, remove TCXCCX
-    
-rule createModel_bloodEquiv_rmCpG_rmTCXCCX: 
-    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
-    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv",
-           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noCpG_noTCXCCX.csv"
-    conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE TRUE FALSE TRUE"#equiv, remove_CpG, remove triplets, remove TCXCCX
-    
-rule createModel_bloodEquiv_rmTrip: 
-    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
-    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noTriplets.csv",
-           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noTriplets.csv"
-    conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE FALSE TRUE FALSE"#equiv, remove_CpG, remove triplets, remove TCXCCX
 
 #CREATE DF RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -167,7 +108,6 @@ rule createDF_blood:
         #"data/global/track_data/phastcons/phastcons_chr1.bed.gz",
         "data/global/track_data/repeats/repeats.bed.gz",
         "data/global/track_data/mappability/mappability.bed.gz",
-        #"data/blood/mutations/blood_mutations_hg18_sorted_tabdelim.bed",
         "data/blood/track_data/DNAse/DNAse.bed.gz", 
         "data/blood/track_data/H3k27ac/H3k27ac.bed.gz", 
         "data/blood/track_data/H3k4me1/H3k4me1.bed.gz", 
@@ -175,14 +115,14 @@ rule createDF_blood:
         "data/blood/track_data/transcription/transcription.bed.gz", 
         "data/blood/track_data/H3k27me3/H3k27me3.bed.gz",
         "data/blood/track_data/methylation/methylation.bed.gz",
-    output: "data/blood/dataframes/{model}/predictorDf.txt"
+    output: "data/blood/dataframes/{model}/predictorDf{model_desc}.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py blood {wildcards.model} '[0,100,10000]';"
-        "grep 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf.txt >> data/blood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
-        "grep 'discord' data/blood/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
-        "grep -v 'discord' data/blood/dataframes/{wildcards.model}/predictorDf.txt > data/blood/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
-        "grep -v 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/blood/dataframes/{wildcards.model}/predictorDf.txt"
+    shell: "python analysis/modules/createDF/createDF.py blood {wildcards.model} '[0,100,10000]' {wildcards.model_desc};"
+        "grep 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
+        "grep 'discord' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
+        "grep -v 'discord' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt > data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt;"
+        "grep -v 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt >  data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt"
         
 rule createDF_liver: 
     input:  
@@ -200,14 +140,15 @@ rule createDF_liver:
         "data/liver/track_data/DNAse/DNAse.bed.gz",
         "data/liver/track_data/transcription/transcription.bed.gz", 
         "data/liver/track_data/methylation/methylation.bed.gz",
-    output: "data/liver/dataframes/{model}/predictorDf.txt"
+    output: "data/liver/dataframes/{model}/predictorDf{model_desc}.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py liver {wildcards.model} '[0,100,10000]';"
-        "grep 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf.txt >> data/liver/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
-        "grep 'discord' data/liver/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
-        "grep -v 'discord' data/liver/dataframes/{wildcards.model}/predictorDf.txt > data/liver/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
-        "grep -v 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/liver/dataframes/{wildcards.model}/predictorDf.txt"
+    shell: "python analysis/modules/createDF/createDF.py liver {wildcards.model} '[0,100,10000]' {wildcards.model_desc};"
+        "grep 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
+        "grep 'discord' data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
+        "grep -v 'discord' data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt > data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt;"
+        "grep -v 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt >  data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt"
+
         
 rule createDF_germline: 
     input:  
@@ -222,14 +163,15 @@ rule createDF_germline:
         "data/germline/track_data/DNAse/DNAse_male_hg18_sorted.bed.gz",
         "data/germline/track_data/H3k27/H3k27ac_male_hg18_sorted.bed.gz",
         "data/germline/track_data/methylation/methylation.bed.gz",
-    output: "data/germline/dataframes/{model}/predictorDf.txt"
+    output: "data/germline/dataframes/{model}/predictorDf{model_desc}.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py germline {wildcards.model} '[0,100,10000]';"
-        "grep 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf.txt >> data/germline/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
-        "grep 'discord' data/germline/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
-        "grep -v 'discord' data/germline/dataframes/{wildcards.model}/predictorDf.txt > data/germline/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
-        "grep -v 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/germline/dataframes/{wildcards.model}/predictorDf.txt"
+    shell: "python analysis/modules/createDF/createDF.py germline {wildcards.model} '[0,100,10000]' {wildcards.model_desc};"
+        "grep 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
+        "grep 'discord' data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
+        "grep -v 'discord' data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt > data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt;"
+        "grep -v 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt >  data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt"
+
         
 rule createDF_skin: 
     input:   
@@ -241,14 +183,15 @@ rule createDF_skin:
         "data/global/track_data/repeats/repeats.bed.gz",
         "data/global/track_data/mappability/mappability.bed.gz",
         "data/skin/track_data/methylation/methylation.bed.gz",
-    output: "data/skin/dataframes/{model}/predictorDf.txt"
+    output: "data/skin/dataframes/{model}/predictorDf{model_desc}.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py skin {wildcards.model} '[0,100,10000]';"
-        "grep 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf.txt >> data/skin/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
-        "grep 'discord' data/skin/dataframes/{wildcards.model}/predictorDf.txt >> data/bloood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
-        "grep -v 'discord' data/skin/dataframes/{wildcards.model}/predictorDf.txt > data/skin/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
-        "grep -v 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/skin/dataframes/{wildcards.model}/predictorDf.txt"
+    shell: "python analysis/modules/createDF/createDF.py skin {wildcards.model} '[0,100,10000]' {wildcards.model_desc};"
+        "grep 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
+        "grep 'discord' data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
+        "grep -v 'discord' data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt > data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt;"
+        "grep -v 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt >  data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt"
+
 
 
 
@@ -472,4 +415,52 @@ rule colon_transcription_downloadWrangle:
         "bash analysis/modules/download_encode/test_twoFiles.sh colon transcription ENCFF304GQR.bigWig ENCFF036UAI.bigWig https://www.encodeproject.org/files/ENCFF304GQR/@@download/ENCFF304GQR.bigWig https://www.encodeproject.org/files/ENCFF036UAI/@@download/ENCFF036UAI.bigWig"
 
 
- 
+#SCRATCH 
+rule createModel_rmCpG: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_boot10k_noCpG.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_boot10k_noCpG.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R  {wildcards.tissue} {wildcards.model} 10000 FALSE FALSE TRUE FALSE "#equiv, remove_CpG, remove triplets, remove TCXCCX
+    
+rule createModel_rmTrip: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_boot10k_noTriplets.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_boot10k_noTriplets.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R  {wildcards.tissue} {wildcards.model} 10000 FALSE TRUE FALSE FALSE "#equiv, remove_CpG, remove triplets, remove TCXCCX
+
+rule createModel_bloodEquiv: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R  {wildcards.tissue} {wildcards.model} 10000 TRUE FALSE FALSE FALSE"#equiv, remove_CpG, remove triplets, remove TCXCCX
+
+rule createModel_bloodEquiv_rmCpG: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noCpG.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noCpG.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE TRUE FALSE FALSE"#equiv, remove_CpG, remove triplets, remove TCXCCX
+
+rule createModel_bloodEquiv_rmTCXCCX: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noTCXCCX.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noTCXCCX.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE FALSE FALSE TRUE"#equiv, remove_CpG, remove triplets, remove TCXCCX
+    
+rule createModel_bloodEquiv_rmCpG_rmTCXCCX: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noCpG_noTCXCCX.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noCpG_noTCXCCX.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE TRUE FALSE TRUE"#equiv, remove_CpG, remove triplets, remove TCXCCX
+    
+rule createModel_bloodEquiv_rmTrip: 
+    input: "data/{tissue}/dataframes/{model}/predictorDf.txt"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF_bloodEquiv_boot10k_noTriplets.csv",
+           "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction_bloodEquiv_boot10k_noTriplets.csv"
+    conda: "conda_RcreateDfModel_env.yml"
+    shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 10000 TRUE FALSE TRUE FALSE"#equiv, remove_CpG, remove triplets, remove TCXCCX
