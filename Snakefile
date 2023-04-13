@@ -1,11 +1,14 @@
 
 rule all: 
     input:              
+        #coef plot 
+        "analysis/global/plots/model8/coefScatter_blood_on_germline_onlySignCoefs_equiv_toLowest_comb.pdf",
+        
         #remake the model,  regular model st stat
-        #"data/blood/dataframes/model8/blood_coefDF_equiv_toLowest.csv",
+        "data/blood/dataframes/model8/blood_coefDF_equiv_toLowest.csv",
         "data/germline/dataframes/model8/germline_coefDF_equiv_toLowest.csv",
         "data/liver/dataframes/model8/liver_coefDF_equiv_toLowest.csv",
-        #"data/skin/dataframes/model8/skin_coefDF_equiv_toLowest.csv",
+        "data/skin/dataframes/model8/skin_coefDF_equiv_toLowest.csv",
 
         #modelprep
         #"data/blood/dataframes/model8/blood_all_data_readyForPrediction.csv",
@@ -62,12 +65,14 @@ rule dataPrep:
 
 rule createModel: 
     input: "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction{model_desc}.csv"
-    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF{model_desc}.csv"
+    output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF{model_desc}.csv",
+           "data/{tissue}/objects/{model}/{tissue}_model{model_desc}.RData"
     conda: "conda_RcreateDfModel_env.yml"
     shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 0 {wildcards.model_desc}" #tissue, model, n samples
 
 rule predict: 
-    input: "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction.csv"
+    input: "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction.csv",
+           "data/{tissue}/objects/{model}/{tissue}_model{model_desc}.RData"
     output: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
     conda: "conda_RcreateDfModel_env.yml"
     shell: "Rscript --vanilla analysis/modules/create_model/predict.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}" 
@@ -79,11 +84,11 @@ rule plotting_scatter:
     shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 400 {wildcards.tissue} {wildcards.tissue_predOn}"  
 
 rule plotting_coef: 
-    input: "data/{tissue}/dataframes/{model}/{tissue}_coefDF.csv",
-           "data/{tissue_predOn}/dataframes/{model}/{tissue_predOn}_coefDF.csv"
-    output: "analysis/global/plots/{model}/coefScatter_{tissue}_on_{tissue_predOn}.pdf"
+    input: "data/{tissue}/dataframes/{model}/{tissue}_coefDF{model_desc}.csv",
+           "data/{tissue_predOn}/dataframes/{model}/{tissue_predOn}_coefDF{model_desc}.csv"
+    output: "analysis/global/plots/{model}/coefScatter_{tissue}_on_{tissue_predOn}_onlySignCoefs{model_desc}_comb.pdf"
     conda: "conda_Rplotting.yml"
-    shell: "Rscript --vanilla analysis/modules/plotting_coef/plotting_coef.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}"   
+    shell: "Rscript --vanilla analysis/modules/plotting_coef/plotting_coef_pairwise.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model} {wildcards.model_desc}"   
 
 rule pca: 
     input: 
