@@ -2,58 +2,46 @@ library(dplyr)
 library(stringr)
 library(stringi)
 library(corrplot)
+library(rlang)
 library(ggplot2)
 
 args = commandArgs(trailingOnly=TRUE)
 tissue = args[1]
 model_name = args[2]
-equiv_toLowest=FALSE
-exclude_CpG=FALSE
-exclude_triplet=FALSE
-exclude_TCX_CCX = FALSE
-if ("equiv_toLowest" %in% args){equiv_toLowest=TRUE}
-if ("equiv_toLowest" %in% args){print("equiv_toLowest=TRUE")}
-if ("exclude_CpG" %in% args){exclude_CpG=TRUE}
-NA_omit=TRUE
+if ("_bloodEquiv" %in% args){ equiv_toLowest = TRUE
+}else{equiv_toLowest = FALSE }
+if ("_noTriplets" %in% args){exclude_triplet = TRUE
+}else{ exclude_triplet = FALSE }
+if ("_noCpG" %in% args){allTissueSpecTracks = TRUE
+}else{allTissueSpecTracks = FALSE }
+if ("_noTCX_CCX" %in% args){ exclude_TCX_CCX = TRUE
+}else{ exclude_TCX_CCX = FALSE }
+if ("_allTissueSpecTracks" %in% args){allTissueSpecTracks = TRUE
+}else{allTissueSpecTracks = FALSE }
+
+# tissue = "blood"
+# model_name = "model7"
+# equiv_toLowest=FALSE
+# exclude_CpG=FALSE 
+# exclude_triplet=FALSE
+# exclude_TCX_CCX = FALSE
+# NA_omit=TRUE
+# mappability_col_keep = TRUE
 
 tmp_file_path = ""
 options(warn=1)
 
-
 model_desc_modify = ""
+
 #import the data 
-if (tissue=="global"){
-    #read in the files 
-    blood_df <-read.table(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/predictorDf.txt",sep=""),header = TRUE,sep="\t")
-    germline_df <-read.table(paste(tmp_file_path,"data/germline/dataframes/",model_name,"/predictorDf.txt",sep=""),header = TRUE,sep="\t")
-    liver_df <-read.table(paste(tmp_file_path,"data/liver/dataframes/",model_name,"/predictorDf.txt",sep=""),header = TRUE,sep="\t")
-    skin_df <-read.table(paste(tmp_file_path,"data/skin/dataframes/",model_name,"/predictorDf.txt",sep=""),header = TRUE,sep="\t")
-    #make a column with the tissue name (for multinomial classification)
-    blood_df$tissue <-"blood"
-    germline_df$tissue<-"germline"
-    liver_df$tissue<-"liver"
-    skin_df$tissue<-"skin"
-    if (equiv_toLowest==TRUE){
-        germline_df <-germline_df[sample(nrow(germline_df), nrow(blood_df)),] 
-        liver_df <-liver_df[sample(nrow(liver_df), nrow(blood_df)),]
-        skin_df <-skin_df[sample(nrow(skin_df), nrow(blood_df)),]
-        model_desc_modify = paste(model_desc_modify,"_bloodEquiv",sep="")}
-    #removing the H3k27me3 predictor for all non liver tissues 
-    blood_df<-blood_df[,!(names(blood_df) %in% c("H3k27me3.0","H3k27me3.100","H3k27me3.10000"))]
-    germline_df<-germline_df[,!(names(germline_df) %in% c("H3k27me3.0","H3k27me3.100","H3k27me3.10000"))]
-    skin_df<-skin_df[,!(names(skin_df) %in% c("H3k27me3.0","H3k27me3.100","H3k27me3.10000"))]
-    #merge the data together. 
-    all_data <- rbind(blood_df,germline_df)#https://www.statmethods.net/management/merging.html
-    all_data <- rbind(all_data,liver_df)
-    all_data <- rbind(all_data,skin_df)
-}else{
-    input_filePath = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/predictorDf.txt",sep="")
-    all_data <- read.table(input_filePath, header = TRUE,sep="\t")
-    if (equiv_toLowest==TRUE){
-        blood_nrow = nrow(read.table(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/predictorDf.txt",sep=""),header = TRUE,sep="\t"))
-        all_data <-all_data[sample(nrow(all_data), blood_nrow), ]
-        model_desc_modify = paste(model_desc_modify,"_bloodEquiv",sep="")}
-}
+input_filePath = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/predictorDf",model_desc_modify,".txt",sep="")
+all_data <- read.table(input_filePath, header = TRUE,sep="\t")
+if (equiv_toLowest==TRUE){
+    blood_nrow = nrow(read.table(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/predictorDf",model_desc_modify,".txt",sep=""),header = TRUE,sep="\t"))
+    all_data <-all_data[sample(nrow(all_data), blood_nrow), ]
+    model_desc_modify = paste(model_desc_modify,"_bloodEquiv",sep="")}
+
+
 
 if (exclude_CpG==TRUE){
     all_data <-all_data[!str_detect(all_data$triplet,"CG"),]
@@ -84,7 +72,7 @@ cat("output for the create_model notebook",file=error_output_file,sep="\n")
 #remove the protein binding flag (if it exists in the version of the predictor data: not existant in later versions)
 all_data$annotation <- gsub("protein_binding","not_transcribed",all_data$annotation)#there are so few protein binding sites that we may as well omit 
 
-#removing unamppable points 
+#removing unamppable points "
 mappable_mut_summary <- all_data %>% 
     group_by(mappability,mutation_status)%>%
     summarise(count=n())
@@ -92,10 +80,12 @@ unmapped_muts = (filter(mappable_mut_summary, (mappability == "not")&(mutation_s
 unmapped_nonMuts = (filter(mappable_mut_summary, (mappability == "not")&(mutation_status == 0))$count)
 string_to_print = paste(tissue,":",unmapped_muts," mutations and",unmapped_nonMuts,"nonMut sites removed by mappability filter out of ",nrow(all_data),"sites",sep=" ")
 cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
-all_data <- filter(all_data,mappability=="mappable")
-all_data <- all_data[,!(names(all_data) %in% c("mappability"))]
+if (mappability_col_keep==FALSE){
+    all_data <- filter(all_data,mappability=="mappable")
+    all_data <- all_data[,!(names(all_data) %in% c("mappability"))]
+}else{model_desc_modify=paste(model_desc_modify,"_withMappableCol",sep="")}
 
-#gc content 
+#handling gc content"
 all_data <- all_data %>%
     mutate(GC_content.0 = Gpercent.0+Cpercent.0) %>%
     mutate(GC_content.100 = Gpercent.100+Cpercent.100) %>% 
@@ -122,57 +112,11 @@ for (b1 in bases){
         c_trips <- append(c_trips,paste(b1,"C",b3,sep=""))
     }
 }
-if (exclude_triplet==FALSE){
-    c_trips_df <- filter(all_data, triplet%in%c_trips)[,c("Chromosome","site","triplet",'methylation_precent.0','methylation_coverage.0')]
-    write.csv(c_trips_df,paste(tmp_file_path,"data/",tissue,"/track_data/methylation/predDf_ctrips",model_desc_modify,".csv",sep=""))
-}
-# # plotting METHYLATION coverage  in dataset
-# # create the distributions for methylation 
-# all_data$test_meth <- as.integer(all_data$methylation_precent.0)
-# all_data$test_meth_cov <- as.integer(all_data$methylation_coverage.0)
-# to_plot = ((filter(all_data,GC_content.0==1&test_meth_cov <100))$test_meth_cov)
-# to_plot_percent = ((filter(all_data,GC_content.0==1&test_meth_cov <100))$test_meth)
-# hist(as.integer(to_plot),main=paste(tissue,"coverage",sep=" "),breaks=40)
-# hist(as.integer(to_plot_percent),main=paste(tissue,"percent methylation",sep=" "),breaks=40)
 
 
-#METHYLATION                                 
-#create the distributions for methylation 
-# all_data$test_meth <- as.integer(all_data$methylation_precent.0)
-# all_data$test_meth_cov <- as.integer(all_data$methylation_coverage.0)
-# to_plot = ((filter(all_data,GC_content.0==1&test_meth_cov <100))$test_meth_cov)
-# hist(as.integer(to_plot),main=paste(tissue,"coverage",sep=" "),breaks=40)
-#create the methylabel column 
+all_data <- all_data[,!str_detect(colnames(all_data),"methyl")]
+model_desc_modify = paste(model_desc_modify,"_noMethyl",sep="")
 
-
-all_data <- all_data %>% 
-      mutate(methylable = ifelse((methylation_precent.0=="no_percent_data" & GC_content.0 == 0), "no",#not a C/G site = no 
-               ifelse((methylation_precent.0=="no_percent_data" & GC_content.0 == 1), NA, # C/G site with no data = NA 
-               ifelse(methylation_precent.0=="0.0","no","yes")))) #C/G site with 0 = no, >0 = yes 
-
-
-#https://stackoverflow.com/questions/24459752/can-dplyr-package-be-used-for-conditional-mutating
-if (exclude_triplet==FALSE){
-if(nrow(all_data %>% filter(methylable=="yes" & GC_content.0 == 0)) != 0 ){ #making sure only gc sites are methylated 
-        methyl_messed<- filter(all_data,methylable=="yes" & GC_content.0 == 0)[,c("Chromosome","site","triplet","methylation_precent.0","methylable")]
-        paste(nrow(methyl_messed),"rows have non-zero methylation values for non-c sites",sep=" ")
-        filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_methyl_messed",model_desc_modify,".csv",sep="")
-        write.csv(methyl_messed,filename, row.names = FALSE)
-        all_data <- all_data %>% 
-          mutate(methylable = ifelse((methylation_precent.0=="infsuff_coverage" & GC_content.0 == 0), "no", methylable))
-}}
-#get methylation summary stats to print to output file 
-methyl_mut_summary <- all_data %>% 
-        group_by(methylable,mutation_status)%>%
-    summarise(count=n())
-cantmeth_muts <- (filter(methyl_mut_summary, is.na(methylable)&(mutation_status == 1)))$count
-cantmeth_NonMuts <- (filter(methyl_mut_summary, is.na(methylable)&(mutation_status == 0)))$count
-string_to_print = paste(tissue,":",cantmeth_muts," mutations and",cantmeth_NonMuts,"nonMut sites removed by no methylable coverage out of ",nrow(all_data),"sites",sep=" ")
-cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
-#removing methylation columns 
-all_data <- all_data[,!(names(all_data) %in% c("site","methylation_precent.0","methylation_precent.100","methylation_precent.10000",
-                                               "methylation_coverage.0","methylation_coverage.100","methylation_coverage.10000"))]
-all_data <- all_data[!(is.na(all_data$methylable)),] #getting rid of the methylation nas 
 
 
 
@@ -224,7 +168,9 @@ if (exclude_triplet==FALSE){all_data$triplet <- as.factor(as.character(all_data$
 all_data$Chromosome <- as.factor(all_data$Chromosome)
 all_data$annotation <- as.factor(all_data$annotation)
 all_data$CpGisland <- as.factor(all_data$CpGisland)
-all_data$methylable <- as.factor(all_data$methylable)
+# all_data$methylable <- as.factor(all_data$methylable)
+
+
 
 #checking that the factor variables are correct (mutation status, triplets, chroms) --> will raise error if not true 
 stopifnot(length(levels(all_data$mutation_status)) == 2)
@@ -239,7 +185,7 @@ if (exclude_triplet==FALSE){
         stopifnot(length(levels(all_data$triplet))==32)}}
 stopifnot(length(levels(all_data$Chromosome))==22)
 stopifnot(length(levels(all_data$CpGisland))==3)
-stopifnot(length(levels(all_data$methylable))==2)
+# stopifnot(length(levels(all_data$methylable))==2)
 
 #if germline, then edit out the female and make the male the default ( i used to include both female and male) 
 if (tissue == "germline"){
@@ -302,7 +248,8 @@ if (tissue=="global"){
 preds_to_standardize<-!(names(all_data) %in% non_num_preds)
 all_data <-(data.frame((model.matrix(dummy~., all_data[, preds_to_standardize])[,-1] )))
 all_data$mutation_status <- muts_col
-if (tissue=="global"){all_data$tissue <- tissue_col}
+if (tissue=="global"){
+    all_data$tissue <- tissue_col}
 
 #STANDARDIZING~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 non_num_preds = c("mutation_status")
@@ -352,7 +299,7 @@ filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tiss
 write.csv(cor_df,filename, row.names = FALSE)
                           
 #REMOVING CORRELATED VARIABLES 
-correlated_vars_toRm = c('H3k27.1','H3k27.0','H3k27.100',
+correlated_vars = c('H3k27.1','H3k27.0','H3k27.100',
                          'H3k4me1.0','H3k4me1.1','H3k4me1.100',
                          'H3k4me3.0','H3k4me3.1','H3k4me3.100',
                          'H3k27me3.0','H3k27me3.1','H3k27me3.100',
@@ -362,8 +309,31 @@ correlated_vars_toRm = c('H3k27.1','H3k27.0','H3k27.100',
                          "DNAse.0","DNAse.1","DNAse.10000",
                          "GC_content.0",
                          "Repeats.100")
-all_data <- all_data[,!(names(all_data) %in% correlated_vars_toRm)]
+all_data <- all_data[,!(names(all_data) %in% correlated_vars)]
                           
+
+#VIF ANALYSIS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+x_data <- all_data[,!(names(all_data) %in% c("mutation_status","mutation_status1"))]
+pred_names <-1:length((colnames(x_data)))
+adj_rsqs <-1:length((colnames(x_data)))
+vifs <-1:length((colnames(x_data)))
+i=1
+for (predictor_name in (colnames(x_data))){
+    formula = paste(predictor_name,"~.",sep="")#write the formula as a string to feed into the lm function 
+    adj_rsq <- summary(lm(formula,data=x_data))$adj.r.squared#extract r sqared 
+    vif <- 1/(1-adj_rsq)                   #calculate vif 
+    pred_names[i] <- predictor_name        #save the predictor name to the vector 
+    adj_rsqs[i] <- adj_rsq                 #save the adjisted r squared to the vector 
+    vifs[i] <- vif                         #save the vif to a vecotr 
+    i=i+1                                  #iterate the index for saving the current r^2/vif 
+    }
+inter_cor_vif_df <- data.frame(pred_names,adj_rsqs,vifs)
+inter_cor_vif_df<- inter_cor_vif_df[order(-vifs),]
+
+#saving the model variables 
+filename =paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_vif_",model_desc_modify,".csv", sep="")
+write.csv(all_data,filename) 
+
 num_data <-all_data[,!(names(all_data) %in% non_num_preds)]
 num_data$mutation_status <- as.numeric(all_data$mutation_status)
 num_cor <- cor(num_data)
@@ -375,4 +345,4 @@ dev.off()
                           
 #saving the model variables 
 filename =paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_all_data_readyForPrediction",model_desc_modify,".csv", sep="")
-write.csv(all_data,filename)                          
+write.csv(all_data,filename)    
