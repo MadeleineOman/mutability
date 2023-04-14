@@ -29,6 +29,9 @@ if ("_exclude_triplet" %in% args){exclude_triplet=TRUE}
 tmp_file_path = ""
 
 model_desc_modify = ""
+
+if ("_fullModel" %in% args){model_desc_modify = paste(model_desc_modify,"_fullModel",sep="")}
+
 if (equiv_toLowest==TRUE){
     model_desc_modify = paste(model_desc_modify,"_equiv_toLowest",sep="")}
 if (exclude_CpG==TRUE){
@@ -163,7 +166,7 @@ if (tissue != "liver"){
     model <- glm(mutation_status~., data=all_data[sample_sites_train,],family="binomial")
 
     #saving the model variables 
-    filename = paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_forLiver_model",model_desc_modify,".RData", sep="") #model 
+    filename = paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_forLiver_model",model_desc_modify,".RData", sep="") #model  
     save(model, file=filename)
     filename =paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_forLiver_samples_sites_test",model_desc_modify,".RData", sep="")#sample sites test 
     save(sample_sites_test , file=filename)
@@ -174,6 +177,7 @@ if (tissue != "liver"){
     coefs <- coef(summary(model))
     coef_df <- as.data.frame(coefs)
     colnames(coef_df) <- c("value","std_err","z_val","p_val")
+    coef_df$t_stat <- coef_df$value/coef_df$std_err
     coef_df<- tibble::rownames_to_column(coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
     coef_df_ordered <- coef_df[order(-coef_df$value),]#https://www.statmethods.net/management/sorting.html
     filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_forLiver_coefDF",model_desc_modify,".csv",sep="")#this sep is for the filename string

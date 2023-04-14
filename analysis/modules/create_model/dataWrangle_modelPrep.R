@@ -37,6 +37,9 @@ model_desc_modify = ""
 #import the data 
 input_filePath = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/predictorDf",model_desc_modify,".txt",sep="")
 all_data <- read.table(input_filePath, header = TRUE,sep="\t")
+
+if ("_fullModel" %in% args){model_desc_modify = paste(model_desc_modify,"_fullModel",sep="")}
+
 if (equiv_toLowest==TRUE){
     blood_nrow = nrow(read.table(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/predictorDf",model_desc_modify,".txt",sep=""),header = TRUE,sep="\t"))
     all_data <-all_data[sample(nrow(all_data), blood_nrow), ]

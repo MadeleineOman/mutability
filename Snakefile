@@ -4,11 +4,24 @@ rule all:
         #coef plot 
         "analysis/global/plots/model8/coefScatter_blood_on_germline_onlySignCoefs_equiv_toLowest_comb.pdf",
         
-        #remake the model,  regular model st stat
-        "data/blood/dataframes/model8/blood_coefDF_equiv_toLowest.csv",
-        "data/germline/dataframes/model8/germline_coefDF_equiv_toLowest.csv",
-        "data/liver/dataframes/model8/liver_coefDF_equiv_toLowest.csv",
-        "data/skin/dataframes/model8/skin_coefDF_equiv_toLowest.csv",
+        #remake the model for the coef plotting --> equiv
+        #"data/blood/dataframes/model8/blood_coefDF_equiv_toLowest.csv",
+        #"data/germline/dataframes/model8/germline_coefDF_equiv_toLowest.csv",
+        #"data/liver/dataframes/model8/liver_coefDF_equiv_toLowest.csv",
+        #"data/skin/dataframes/model8/skin_coefDF.csv",
+        
+        #need the model for the prediction --> not equiv to lowest and need the r data 
+        "data/blood/objects/model8/blood_model_fullModel.RData",
+        #"data/germline/objects/model8/germline_model_fullModel.RData",
+        #"data/liver/objects/model8/liver_model_fullModel.RData",
+        #"data/skin/objects/model8/skin_model_fullModel.RData",
+        
+        #scatter plot 
+        "analysis/blood/plots/model8/scatter_blood_on_blood_fullModel.pdf",
+        #"analysis/germline/plots/model8/scatter_germline_on_germline_fullModel.pdf",
+        #"analysis/liver/plots/model8/scatter_liver_on_liver_fullModel.pdf",
+        #"analysis/skin/plots/model8/scatter_skin_on_skin_fullModel.pdf",
+        
 
         #modelprep
         #"data/blood/dataframes/model8/blood_all_data_readyForPrediction.csv",
@@ -17,10 +30,10 @@ rule all:
         #"data/skin/dataframes/model8/skin_all_data_readyForPrediction.csv",
 
         #new df 
-        "data/blood/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
-        "data/germline/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
-        "data/liver/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
-        "data/skin/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
+        #"data/blood/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
+        #"data/germline/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
+        #"data/liver/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
+        #"data/skin/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
 
         #SCATTER PLOT PREDICTION ON SELF        
         #"analysis/blood/plots/model6/scatter_blood_on_blood.pdf",
@@ -71,17 +84,16 @@ rule createModel:
     shell: "Rscript --vanilla analysis/modules/create_model/create_linearModel.R {wildcards.tissue} {wildcards.model} 0 {wildcards.model_desc}" #tissue, model, n samples
 
 rule predict: 
-    input: "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction.csv",
-           "data/{tissue}/objects/{model}/{tissue}_model{model_desc}.RData"
-    output: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
+    input: "data/{tissue}/objects/{model}/{tissue}_model{model_desc}.RData"
+    output: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf{model_desc}.csv"
     conda: "conda_RcreateDfModel_env.yml"
-    shell: "Rscript --vanilla analysis/modules/create_model/predict.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model}" 
+    shell: "Rscript --vanilla analysis/modules/create_model/predict.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model} {wildcards.model_desc}" 
  
 rule plotting_scatter: 
-    input: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf.csv"
-    output: "analysis/{tissue}/plots/{model}/scatter_{tissue}_on_{tissue_predOn}.pdf"
+    input: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf{model_desc}.csv"
+    output: "analysis/{tissue}/plots/{model}/scatter_{tissue}_on_{tissue_predOn,[A-Za-z]+}{model_desc}.pdf" #the ,[A-Za-z]+ enforces only match letters
     conda: "conda_Rplotting.yml"
-    shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 400 {wildcards.tissue} {wildcards.tissue_predOn}"  
+    shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 400 {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model_desc}"  
 
 rule plotting_coef: 
     input: "data/{tissue}/dataframes/{model}/{tissue}_coefDF{model_desc}.csv",
