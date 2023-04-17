@@ -1,8 +1,35 @@
 
 rule all: 
     input:              
-        #coef plot 
+        #coef plot pairwise
         "analysis/global/plots/model8/coefScatter_blood_on_germline_onlySignCoefs_equiv_toLowest_comb.pdf",
+        "analysis/global/plots/model8/coefScatter_blood_on_liver_onlySignCoefs_equiv_toLowest_comb.pdf",
+        "analysis/global/plots/model8/coefScatter_blood_on_skin_onlySignCoefs_equiv_toLowest_comb.pdf",
+        "analysis/global/plots/model8/coefScatter_skin_on_germline_onlySignCoefs_equiv_toLowest_comb.pdf",
+        "analysis/global/plots/model8/coefScatter_skin_on_liver_onlySignCoefs_equiv_toLowest_comb.pdf",
+        "analysis/global/plots/model8/coefScatter_liver_on_germline_onlySignCoefs_equiv_toLowest_comb.pdf",
+        
+        #coef plot all 
+        "analysis/global/plots/model8/coefViolinPlot_all_tStatDev_equiv_toLowest_onlySign.pdf",
+              
+        #scatter plot on self 
+        "analysis/blood/plots/model8/scatter_blood_on_blood_fullModel.pdf",
+        "analysis/germline/plots/model8/scatter_germline_on_germline_fullModel.pdf",
+        "analysis/liver/plots/model8/scatter_liver_on_liver_fullModel.pdf",
+        "analysis/skin/plots/model8/scatter_skin_on_skin_fullModel.pdf",
+        #scatter plot on other 
+        "analysis/blood/plots/model8/scatter_blood_on_germline_fullModel.pdf",
+        "analysis/blood/plots/model8/scatter_blood_on_liver_fullModel.pdf",
+        "analysis/blood/plots/model8/scatter_blood_on_skin_fullModel.pdf",
+        "analysis/germline/plots/model8/scatter_germline_on_blood_fullModel.pdf",
+        "analysis/germline/plots/model8/scatter_germline_on_liver_fullModel.pdf",
+        "analysis/germline/plots/model8/scatter_germline_on_skin_fullModel.pdf",
+        "analysis/liver/plots/model8/scatter_liver_on_blood_fullModel.pdf",
+        "analysis/liver/plots/model8/scatter_liver_on_germline_fullModel.pdf",
+        "analysis/liver/plots/model8/scatter_liver_on_skin_fullModel.pdf",
+        "analysis/skin/plots/model8/scatter_skin_on_blood_fullModel.pdf",
+        "analysis/skin/plots/model8/scatter_skin_on_liver_fullModel.pdf",
+        "analysis/skin/plots/model8/scatter_skin_on_germline_fullModel.pdf",
         
         #remake the model for the coef plotting --> equiv
         #"data/blood/dataframes/model8/blood_coefDF_equiv_toLowest.csv",
@@ -11,18 +38,12 @@ rule all:
         #"data/skin/dataframes/model8/skin_coefDF.csv",
         
         #need the model for the prediction --> not equiv to lowest and need the r data 
-        "data/blood/objects/model8/blood_model_fullModel.RData",
+        #"data/blood/objects/model8/blood_model_fullModel.RData",
         #"data/germline/objects/model8/germline_model_fullModel.RData",
         #"data/liver/objects/model8/liver_model_fullModel.RData",
         #"data/skin/objects/model8/skin_model_fullModel.RData",
         
-        #scatter plot 
-        "analysis/blood/plots/model8/scatter_blood_on_blood_fullModel.pdf",
-        #"analysis/germline/plots/model8/scatter_germline_on_germline_fullModel.pdf",
-        #"analysis/liver/plots/model8/scatter_liver_on_liver_fullModel.pdf",
-        #"analysis/skin/plots/model8/scatter_skin_on_skin_fullModel.pdf",
         
-
         #modelprep
         #"data/blood/dataframes/model8/blood_all_data_readyForPrediction.csv",
         #"data/germline/dataframes/model8/germline_all_data_readyForPrediction.csv",
@@ -76,7 +97,7 @@ rule dataPrep:
     conda: "conda_RcreateDfModel_env.yml"
     shell: "Rscript --vanilla analysis/modules/create_model/dataWrangle_modelPrep.R {wildcards.tissue} {wildcards.model} {wildcards.model_desc}" # 
 
-rule createModel: 
+rule trainModel: 
     input: "data/{tissue}/dataframes/{model}/{tissue}_all_data_readyForPrediction{model_desc}.csv"
     output:"data/{tissue}/dataframes/{model}/{tissue}_coefDF{model_desc}.csv",
            "data/{tissue}/objects/{model}/{tissue}_model{model_desc}.RData"
@@ -95,13 +116,23 @@ rule plotting_scatter:
     conda: "conda_Rplotting.yml"
     shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 400 {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model_desc}"  
 
-rule plotting_coef: 
+rule plotting_coef_pairwise: 
     input: "data/{tissue}/dataframes/{model}/{tissue}_coefDF{model_desc}.csv",
            "data/{tissue_predOn}/dataframes/{model}/{tissue_predOn}_coefDF{model_desc}.csv"
     output: "analysis/global/plots/{model}/coefScatter_{tissue}_on_{tissue_predOn}_onlySignCoefs{model_desc}_comb.pdf"
     conda: "conda_Rplotting.yml"
     shell: "Rscript --vanilla analysis/modules/plotting_coef/plotting_coef_pairwise.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model} {wildcards.model_desc}"   
 
+
+rule plotting_coef_all: 
+    input: "data/blood/dataframes/{model}/blood_coefDF{model_desc}.csv",
+           "data/germline/dataframes/{model}/germline_coefDF{model_desc}.csv",
+           "data/liver/dataframes/{model}/liver_coefDF{model_desc}.csv",
+           "data/skin/dataframes/{model}/skin_coefDF{model_desc}.csv"
+    output: "analysis/global/plots/{model}/coefViolinPlot_all_tStat{model_desc}_onlySign.pdf"
+    conda: "conda_Rplotting.yml"
+    shell: "Rscript --vanilla analysis/modules/plotting_coef/plotting_coef_all.R {wildcards.model} {wildcards.model_desc}" 
+    
 rule pca: 
     input: 
         "data/blood/dataframes/{model}/blood_all_data_readyForPrediction.csv", 
@@ -132,14 +163,14 @@ rule createDF_blood:
         "data/blood/track_data/transcription/transcription.bed.gz", 
         "data/blood/track_data/H3k27me3/H3k27me3.bed.gz",
         "data/blood/track_data/methylation/methylation.bed.gz",
-    output: "data/blood/dataframes/{model}/predictorDf{model_desc}.txt"
+    output: "data/blood/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py blood {wildcards.model} '[0,100,10000]' {wildcards.model_desc};"
-        "grep 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
-        "grep 'discord' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
-        "grep -v 'discord' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt > data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt;"
-        "grep -v 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt >  data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt"
+    shell: "python analysis/modules/createDF/createDF.py blood {wildcards.model} '[0,100,10000]' ;"
+        "grep 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/blood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep 'discord' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/blood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep -v 'discord' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt > data/blood/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
+        "grep -v 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt >  data/blood/dataframes/{wildcards.model}/predictorDf.txt"
         
 rule createDF_liver: 
     input:  
@@ -157,14 +188,14 @@ rule createDF_liver:
         "data/liver/track_data/DNAse/DNAse.bed.gz",
         "data/liver/track_data/transcription/transcription.bed.gz", 
         "data/liver/track_data/methylation/methylation.bed.gz",
-    output: "data/liver/dataframes/{model}/predictorDf{model_desc}.txt"
+    output: "data/liver/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py liver {wildcards.model} '[0,100,10000]' {wildcards.model_desc};"
-        "grep 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
-        "grep 'discord' data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
-        "grep -v 'discord' data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt > data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt;"
-        "grep -v 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt >  data/liver/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt"
+    shell: "python analysis/modules/createDF/createDF.py liver {wildcards.model} '[0,100,10000]' ;"
+        "grep 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf.txt >> data/liver/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep 'discord' data/liver/dataframes/{wildcards.model}/predictorDf.txt >> data/liver/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep -v 'discord' data/liver/dataframes/{wildcards.model}/predictorDf.txt > data/liver/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
+        "grep -v 'buffer' data/liver/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/liver/dataframes/{wildcards.model}/predictorDf.txt"
 
         
 rule createDF_germline: 
@@ -180,14 +211,14 @@ rule createDF_germline:
         "data/germline/track_data/DNAse/DNAse_male_hg18_sorted.bed.gz",
         "data/germline/track_data/H3k27/H3k27ac_male_hg18_sorted.bed.gz",
         "data/germline/track_data/methylation/methylation.bed.gz",
-    output: "data/germline/dataframes/{model}/predictorDf{model_desc}.txt"
+    output: "data/germline/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py germline {wildcards.model} '[0,100,10000]' {wildcards.model_desc};"
-        "grep 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
-        "grep 'discord' data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
-        "grep -v 'discord' data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt > data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt;"
-        "grep -v 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt >  data/germline/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt"
+    shell: "python analysis/modules/createDF/createDF.py germline {wildcards.model} '[0,100,10000]' ;"
+        "grep 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf.txt >> data/germline/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep 'discord' data/germline/dataframes/{wildcards.model}/predictorDf.txt >> data/germline/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep -v 'discord' data/germline/dataframes/{wildcards.model}/predictorDf.txt > data/germline/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
+        "grep -v 'buffer' data/germline/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/germline/dataframes/{wildcards.model}/predictorDf.txt"
 
         
 rule createDF_skin: 
@@ -200,14 +231,14 @@ rule createDF_skin:
         "data/global/track_data/repeats/repeats.bed.gz",
         "data/global/track_data/mappability/mappability.bed.gz",
         "data/skin/track_data/methylation/methylation.bed.gz",
-    output: "data/skin/dataframes/{model}/predictorDf{model_desc}.txt"
+    output: "data/skin/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
-    shell: "python analysis/modules/createDF/createDF.py skin {wildcards.model} '[0,100,10000]' {wildcards.model_desc};"
-        "grep 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
-        "grep 'discord' data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_errorlog.txt;"
-        "grep -v 'discord' data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt > data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt;"
-        "grep -v 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt >  data/skin/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt"
+    shell: "python analysis/modules/createDF/createDF.py skin {wildcards.model} '[0,100,10000]' ;"
+        "grep 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf.txt >> data/skin/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep 'discord' data/skin/dataframes/{wildcards.model}/predictorDf.txt >> data/skin/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep -v 'discord' data/skin/dataframes/{wildcards.model}/predictorDf.txt > data/skin/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
+        "grep -v 'buffer' data/skin/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/skin/dataframes/{wildcards.model}/predictorDf.txt"
 
 
 
