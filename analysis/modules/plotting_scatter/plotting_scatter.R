@@ -3,6 +3,8 @@ model_name = args[1]
 bin_size_desiredMin = as.integer(args[2])
 tissue = args[3]
 tissue_predOn = args[4]
+if ("_fullModel" %in% args){ fullModel = TRUE
+}else{fullModel = FALSE }
 if ("_equiv_toLowest" %in% args){ equiv_toLowest = TRUE
 }else{equiv_toLowest = FALSE }
 if ("_noTriplets" %in% args){exclude_triplet = TRUE
@@ -18,7 +20,8 @@ if ("_noTCX_CCX" %in% args){ exclude_TCX_CCX = TRUE
 # bin_size_desiredMin = 400
 # tissue = "germline"
 # tissue_predOn = "germline"
-# equiv_toLowest=TRUE
+# fullModel=TRUE
+# equiv_toLowest=FALSE
 # exclude_triplet = FALSE
 # exclude_CpG= FALSE
 
@@ -27,7 +30,8 @@ tmp_pathToFiles = ""
 
 model_desc_modify = ""
 
-if ("_fullModel" %in% args){model_desc_modify = paste(model_desc_modify,"_fullModel",sep="")}
+if (fullModel ==TRUE){
+    model_desc_modify = paste(model_desc_modify,"_fullModel",sep="")}
 
 if (equiv_toLowest==TRUE){
     model_desc_modify = paste(model_desc_modify,"_equiv_toLowest",sep="")}
@@ -37,6 +41,8 @@ if (exclude_CpG==TRUE){
 if (exclude_triplet==TRUE){
     model_desc_modify = paste(model_desc_modify,"_noTriplets",sep="")} #an arbitrary variable i use to convert b/t the directory of the creator notebook (play mode) and the home directory (snakemake executible)
 
+
+# 
 library(ggplot2)
 library(stringr)
 
@@ -59,14 +65,16 @@ string_to_print = paste("model mse predicting directly on mutations is",mse)
 cat(string_to_print,file=error_output_file,sep="\n")
 mae = round(sum(abs(probs_df$glm_probs - probs_df$mutation_status))/nrow(probs_df),3)
 string_to_print = paste("model mae predicting directly on mutations is",mae)
-cat(string_to_print,file=error_output_file,sep="\n")
+cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
+
+
 
 #sorting df by proabbility 
 probs_df_sorted <- probs_df[order(probs_df$glm_probs, decreasing = FALSE),]
 
 #printing some info about the df 
 string_to_print = paste("skin on skin: ",sum(probs_df$mutation_status),"muts,",round(sum(probs_df$mutation_status)/nrow(probs_df),2),"ratio",sep=" ")
-cat(string_to_print,file=error_output_file,sep="\n")
+cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
 
 #making the indexing vectors for plotting ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #creating the bins 
@@ -77,7 +85,7 @@ bin_size = bin_size_desiredMin+extra_toAddToBins
 extra_to_add_first_bin = nrow(probs_df_sorted)-(bin_size_desiredMin+extra_toAddToBins)*nbin
 stopifnot(extra_to_add_first_bin<=nbin)
 string_to_print = paste("to comply with exactly equal bin sizes, sites",bin_size,"to",bin_size+extra_to_add_first_bin,"are ommitted out of",nrow(probs_df),"total sites, with",nbin,"bins sized",bin_size,sep=" ")
-cat(string_to_print,file=error_output_file,sep="\n")
+cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
 
 #making the vector for plotting 
 vector_indexing = c(1, bin_size+extra_to_add_first_bin)
@@ -144,4 +152,6 @@ cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
 #making the scatter linear model and printing detaisl to file 
 fit<-lm(average_proportion_mutations~average_predicted_probs,data=plotting_df)
 string_to_print = paste("r-squared is",summary(fit)$r.squared,sep=" ")
+cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
+string_to_print = paste("adjusted r-squared is",summary(fit)$adj.r.squared,sep=" ")
 cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)

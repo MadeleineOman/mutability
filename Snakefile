@@ -1,36 +1,51 @@
 
 rule all: 
-    input:              
-        #coef plot pairwise
-        "analysis/global/plots/model8/coefScatter_blood_on_germline_onlySignCoefs_equiv_toLowest_comb.pdf",
-        "analysis/global/plots/model8/coefScatter_blood_on_liver_onlySignCoefs_equiv_toLowest_comb.pdf",
-        "analysis/global/plots/model8/coefScatter_blood_on_skin_onlySignCoefs_equiv_toLowest_comb.pdf",
-        "analysis/global/plots/model8/coefScatter_skin_on_germline_onlySignCoefs_equiv_toLowest_comb.pdf",
-        "analysis/global/plots/model8/coefScatter_skin_on_liver_onlySignCoefs_equiv_toLowest_comb.pdf",
-        "analysis/global/plots/model8/coefScatter_liver_on_germline_onlySignCoefs_equiv_toLowest_comb.pdf",
+    input: 
+        #new df 
+        #"data/blood/dataframes/model9/predictorDf.txt",
+        #"data/germline/dataframes/model9/predictorDf.txt",
+        "data/liver/dataframes/model9/predictorDf.txt"
+        #"data/skin/dataframes/model9/predictorDf.txt",
+    
         
-        #coef plot all 
-        "analysis/global/plots/model8/coefViolinPlot_all_tStatDev_equiv_toLowest_onlySign.pdf",
+        #scatter plot summarize results 
+        #"data/global/dataframes/model9/MAE_df_fullModel.csv",       
+        
+        #tStat plot summarise
+        #"data/global/dataframes/model9/tStat_pairwise_MAE_df_equiv_toLowest.csv",
+        
+        #tStat plot all 
+        #"analysis/global/plots/model9/coefViolinPlot_all_tStatDev_equiv_toLowest_onlySign.pdf",
               
-        #scatter plot on self 
-        "analysis/blood/plots/model8/scatter_blood_on_blood_fullModel.pdf",
-        "analysis/germline/plots/model8/scatter_germline_on_germline_fullModel.pdf",
-        "analysis/liver/plots/model8/scatter_liver_on_liver_fullModel.pdf",
-        "analysis/skin/plots/model8/scatter_skin_on_skin_fullModel.pdf",
-        #scatter plot on other 
-        "analysis/blood/plots/model8/scatter_blood_on_germline_fullModel.pdf",
-        "analysis/blood/plots/model8/scatter_blood_on_liver_fullModel.pdf",
-        "analysis/blood/plots/model8/scatter_blood_on_skin_fullModel.pdf",
-        "analysis/germline/plots/model8/scatter_germline_on_blood_fullModel.pdf",
-        "analysis/germline/plots/model8/scatter_germline_on_liver_fullModel.pdf",
-        "analysis/germline/plots/model8/scatter_germline_on_skin_fullModel.pdf",
-        "analysis/liver/plots/model8/scatter_liver_on_blood_fullModel.pdf",
-        "analysis/liver/plots/model8/scatter_liver_on_germline_fullModel.pdf",
-        "analysis/liver/plots/model8/scatter_liver_on_skin_fullModel.pdf",
-        "analysis/skin/plots/model8/scatter_skin_on_blood_fullModel.pdf",
-        "analysis/skin/plots/model8/scatter_skin_on_liver_fullModel.pdf",
-        "analysis/skin/plots/model8/scatter_skin_on_germline_fullModel.pdf",
+
+
+
+        #INTERMEDIATE  STEPS ~~~~~~~~~~~~~~~~~~~~~~~~~~
         
+        #SCATTER PLOT PREDICTION ON SELF        
+        #"analysis/blood/plots/model9/scatter_blood_on_blood_fullModel.pdf",
+        #"analysis/liver/plots/model9/scatter_liver_on_liver_fullModel.pdf",
+        #"analysis/germline/plots/model9/scatter_germline_on_germline_fullModel.pdf",
+        #"analysis/skin/plots/model9/scatter_skin_on_skin_fullModel.pdf",
+        
+        #SCATTER PLOT PREDICTION ON OTHER 
+        #"analysis/skin/plots/model9/scatter_skin_on_blood_fullModel.pdf",
+        #"analysis/skin/plots/model9/scatter_skin_on_germline_fullModel.pdf",
+        #"analysis/skin/plots/model9/scatter_skin_on_liver_fullModel.pdf",
+        #"analysis/blood/plots/model9/scatter_blood_on_skin_fullModel.pdf",
+        #"analysis/blood/plots/model9/scatter_blood_on_germline_fullModel.pdf",
+        #"analysis/blood/plots/model9/scatter_blood_on_liver_fullModel.pdf",
+        #"analysis/germline/plots/model9/scatter_germline_on_skin_fullModel.pdf",
+        #"analysis/germline/plots/model9/scatter_germline_on_blood_fullModel.pdf",
+        #"analysis/germline/plots/model9/scatter_germline_on_liver_fullModel.pdf",
+        #"analysis/liver/plots/model9/scatter_liver_on_blood_fullModel.pdf",
+        #"analysis/liver/plots/model9/scatter_liver_on_skin_fullModel.pdf",
+        #"analysis/liver/plots/model9/scatter_liver_on_germline_fullModel.pdf",
+        
+
+
+
+
         #remake the model for the coef plotting --> equiv
         #"data/blood/dataframes/model8/blood_coefDF_equiv_toLowest.csv",
         #"data/germline/dataframes/model8/germline_coefDF_equiv_toLowest.csv",
@@ -43,40 +58,13 @@ rule all:
         #"data/liver/objects/model8/liver_model_fullModel.RData",
         #"data/skin/objects/model8/skin_model_fullModel.RData",
         
-        
         #modelprep
         #"data/blood/dataframes/model8/blood_all_data_readyForPrediction.csv",
         #"data/germline/dataframes/model8/germline_all_data_readyForPrediction.csv",
         #"data/liver/dataframes/model8/liver_all_data_readyForPrediction.csv",
         #"data/skin/dataframes/model8/skin_all_data_readyForPrediction.csv",
 
-        #new df 
-        #"data/blood/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
-        #"data/germline/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
-        #"data/liver/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
-        #"data/skin/dataframes/model7/predictorDf_allTissueSpecTracks.txt",
 
-        #SCATTER PLOT PREDICTION ON SELF        
-        #"analysis/blood/plots/model6/scatter_blood_on_blood.pdf",
-        #"analysis/liver/plots/model6/scatter_liver_on_liver.pdf",
-        #"analysis/germline/plots/model6/scatter_germline_on_germline.pdf",
-        #"analysis/skin/plots/model6/scatter_skin_on_skin.pdf",
-        
-        #SCATTER PLOT PREDICTION ON OTHER 
-        #"analysis/skin/plots/model6/scatter_skin_on_blood.pdf",
-        #"analysis/skin/plots/model6/scatter_skin_on_germline.pdf",
-        #"analysis/skin/plots/model6/scatter_skin_on_liver.pdf",
-        #"analysis/blood/plots/model6/scatter_blood_on_skin.pdf",
-        #"analysis/blood/plots/model6/scatter_blood_on_germline.pdf",
-        #"analysis/blood/plots/model6/scatter_blood_on_liver.pdf",
-        #"analysis/germline/plots/model6/scatter_germline_on_skin.pdf",
-        #"analysis/germline/plots/model6/scatter_germline_on_blood.pdf",
-        #"analysis/germline/plots/model6/scatter_germline_on_liver.pdf",
-        #"analysis/germline/plots/model6/scatter_germline_on_liver.pdf",
-        #"analysis/liver/plots/model6/scatter_liver_on_blood.pdf",
-        #"analysis/liver/plots/model6/scatter_liver_on_skin.pdf",
-        #"analysis/liver/plots/model6/scatter_liver_on_germline.pdf",
-        
         #COEF COMPARISON SCATTER PLOT 
         #"analysis/global/plots/model6/coefScatter_blood_on_skin.pdf",
         #"analysis/global/plots/model6/coefScatter_blood_on_germline.pdf",
@@ -114,12 +102,12 @@ rule plotting_scatter:
     input: "data/{tissue}/dataframes/{model}/{tissue}_on_{tissue_predOn}_ProbabilityDf{model_desc}.csv"
     output: "analysis/{tissue}/plots/{model}/scatter_{tissue}_on_{tissue_predOn,[A-Za-z]+}{model_desc}.pdf" #the ,[A-Za-z]+ enforces only match letters
     conda: "conda_Rplotting.yml"
-    shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 400 {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model_desc}"  
+    shell: "Rscript --vanilla analysis/modules/plotting_scatter/plotting_scatter.R {wildcards.model} 100 {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model_desc}"  
 
 rule plotting_coef_pairwise: 
     input: "data/{tissue}/dataframes/{model}/{tissue}_coefDF{model_desc}.csv",
            "data/{tissue_predOn}/dataframes/{model}/{tissue_predOn}_coefDF{model_desc}.csv"
-    output: "analysis/global/plots/{model}/coefScatter_{tissue}_on_{tissue_predOn}_onlySignCoefs{model_desc}_comb.pdf"
+    output: "analysis/global/plots/{model}/tStatScatter_{tissue}_on_{tissue_predOn}_onlySignCoefs{model_desc}_comb.pdf"
     conda: "conda_Rplotting.yml"
     shell: "Rscript --vanilla analysis/modules/plotting_coef/plotting_coef_pairwise.R {wildcards.tissue} {wildcards.tissue_predOn} {wildcards.model} {wildcards.model_desc}"   
 
@@ -129,9 +117,49 @@ rule plotting_coef_all:
            "data/germline/dataframes/{model}/germline_coefDF{model_desc}.csv",
            "data/liver/dataframes/{model}/liver_coefDF{model_desc}.csv",
            "data/skin/dataframes/{model}/skin_coefDF{model_desc}.csv"
-    output: "analysis/global/plots/{model}/coefViolinPlot_all_tStat{model_desc}_onlySign.pdf"
+    output: "analysis/global/plots/{model}/coefViolinPlot_all_tStatDev{model_desc}_onlySign.pdf"
     conda: "conda_Rplotting.yml"
     shell: "Rscript --vanilla analysis/modules/plotting_coef/plotting_coef_all.R {wildcards.model} {wildcards.model_desc}" 
+    
+    
+rule sumarize_scatter: 
+    input:#scatte rplot on self 
+        "analysis/blood/plots/{model}/scatter_blood_on_blood_fullModel.pdf",
+        "analysis/germline/plots/{model}/scatter_germline_on_germline_fullModel.pdf",
+        "analysis/liver/plots/{model}/scatter_liver_on_liver_fullModel.pdf",
+        "analysis/skin/plots/{model}/scatter_skin_on_skin_fullModel.pdf",
+        #scatter plot on other 
+        "analysis/blood/plots/{model}/scatter_blood_on_germline_fullModel.pdf",
+        "analysis/blood/plots/{model}/scatter_blood_on_liver_fullModel.pdf",
+        "analysis/blood/plots/{model}/scatter_blood_on_skin_fullModel.pdf",
+        "analysis/germline/plots/{model}/scatter_germline_on_blood_fullModel.pdf",
+        "analysis/germline/plots/{model}/scatter_germline_on_liver_fullModel.pdf",
+        "analysis/germline/plots/{model}/scatter_germline_on_skin_fullModel.pdf",
+        "analysis/liver/plots/{model}/scatter_liver_on_blood_fullModel.pdf",
+        "analysis/liver/plots/{model}/scatter_liver_on_germline_fullModel.pdf",
+        "analysis/liver/plots/{model}/scatter_liver_on_skin_fullModel.pdf",
+        "analysis/skin/plots/{model}/scatter_skin_on_blood_fullModel.pdf",
+        "analysis/skin/plots/{model}/scatter_skin_on_liver_fullModel.pdf",
+        "analysis/skin/plots/{model}/scatter_skin_on_germline_fullModel.pdf"
+    output: "data/global/dataframes/{model}/MAE_df{model_desc}.csv",
+        "data/global/dataframes/{model}/MSE_df{model_desc}.csv",
+        "data/global/dataframes/{model}/r_squared_df{model_desc}.csv",
+        "data/global/dataframes/{model}/adj_r_squared_df{model_desc}.csv",
+    conda: "conda_createDF.yml"
+    shell: "python  analysis/modules/summarizing_results/summarizing_scatter_accuracy.py  {wildcards.model} {wildcards.model_desc}" 
+
+rule sumarize_tStat_pairwise: 
+    input:#pairwise  
+        "analysis/global/plots/{model}/tStatScatter_blood_on_germline_onlySignCoefs{model_desc}_comb.pdf",
+        "analysis/global/plots/{model}/tStatScatter_blood_on_liver_onlySignCoefs{model_desc}_comb.pdf",
+        "analysis/global/plots/{model}/tStatScatter_blood_on_skin_onlySignCoefs{model_desc}_comb.pdf",
+        "analysis/global/plots/{model}/tStatScatter_skin_on_germline_onlySignCoefs{model_desc}_comb.pdf",
+        "analysis/global/plots/{model}/tStatScatter_skin_on_liver_onlySignCoefs{model_desc}_comb.pdf",
+        "analysis/global/plots/{model}/tStatScatter_liver_on_germline_onlySignCoefs{model_desc}_comb.pdf"
+    output: "data/global/dataframes/{model}/tStat_pairwise_r_squared_df{model_desc}.csv",
+        "data/global/dataframes/{model}/tStat_pairwise_MAE_df{model_desc}.csv"
+    conda: "conda_createDF.yml"
+    shell: "python  analysis/modules/summarizing_results/summarizing_tStat_pairwise_scatter.py  {wildcards.model} {wildcards.model_desc}" 
     
 rule pca: 
     input: 
@@ -142,8 +170,6 @@ rule pca:
     output: "analysis/global/plots/{model}/pca_allData_mutsAndNonMuts.pdf"
     conda: "conda_Rplotting.yml"
     shell: "Rscript --vanilla analysis/modules/pca/pca.R {wildcards.model}" 
-
-
 
 #CREATE DF RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -162,15 +188,15 @@ rule createDF_blood:
         "data/blood/track_data/H3k4me3/H3k4me3.bed.gz", 
         "data/blood/track_data/transcription/transcription.bed.gz", 
         "data/blood/track_data/H3k27me3/H3k27me3.bed.gz",
-        "data/blood/track_data/methylation/methylation.bed.gz",
+        #"data/blood/track_data/methylation/methylation.bed.gz",
     output: "data/blood/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
     shell: "python analysis/modules/createDF/createDF.py blood {wildcards.model} '[0,100,10000]' ;"
-        "grep 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/blood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
-        "grep 'discord' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt >> data/blood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
-        "grep -v 'discord' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}.txt > data/blood/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
-        "grep -v 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf{wildcards.model_desc}_noDiscord.txt >  data/blood/dataframes/{wildcards.model}/predictorDf.txt"
+        "grep 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf.txt >> data/blood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep 'discord' data/blood/dataframes/{wildcards.model}/predictorDf.txt >> data/blood/dataframes/{wildcards.model}/predictorDf_errorlog.txt;"
+        "grep -v 'discord' data/blood/dataframes/{wildcards.model}/predictorDf.txt > data/blood/dataframes/{wildcards.model}/predictorDf_noDiscord.txt;"
+        "grep -v 'buffer' data/blood/dataframes/{wildcards.model}/predictorDf_noDiscord.txt >  data/blood/dataframes/{wildcards.model}/predictorDf.txt"
         
 rule createDF_liver: 
     input:  
@@ -184,10 +210,11 @@ rule createDF_liver:
         "data/liver/track_data/H3k4me1/H3k4me1.bed.gz",
         "data/liver/track_data/H3k4me3/H3k4me3.bed.gz",
         "data/liver/track_data/H3k27ac/H3k27ac.bed.gz",
+        "data/liver/track_data/H3k27me3/H3k27me3.bed.gz",
         "data/liver/track_data/H3k36me3/H3k36me3.bed.gz",
         "data/liver/track_data/DNAse/DNAse.bed.gz",
         "data/liver/track_data/transcription/transcription.bed.gz", 
-        "data/liver/track_data/methylation/methylation.bed.gz",
+        #"data/liver/track_data/methylation/methylation.bed.gz",
     output: "data/liver/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
@@ -207,10 +234,10 @@ rule createDF_germline:
         #"data/global/track_data/phastcons/phastcons_chr1.bed.gz",
         "data/global/track_data/repeats/repeats.bed.gz",
         "data/global/track_data/mappability/mappability.bed.gz",
-        "data/germline/track_data/transcription/transcription_male_hg18_sorted.bed.gz",
-        "data/germline/track_data/DNAse/DNAse_male_hg18_sorted.bed.gz",
+        "data/germline/track_data/transcription/transcription.bed.gz",
+        "data/germline/track_data/DNAse/DNAse.bed.gz",
         "data/germline/track_data/H3k27/H3k27ac_male_hg18_sorted.bed.gz",
-        "data/germline/track_data/methylation/methylation.bed.gz",
+        #"data/germline/track_data/methylation/methylation.bed.gz",
     output: "data/germline/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
@@ -224,13 +251,16 @@ rule createDF_germline:
 rule createDF_skin: 
     input:   
         #"data/global/sequence/chr1.fa.gz",  
+        "data/skin/track_data/transcription/transcription_kerat.bed.gz",
+        "data/skin/track_data/transcription/transcription_fibro.bed.gz",
+        "data/skin/track_data/DNAse/DNAse.bed.gz",
         "data/global/track_data/laminB1/laminB1_chr1.bed.gz", 
         "data/global/track_data/replication/replication.bed.gz",
         "data/global/track_data/recombination/recombination.bed.gz",
         #"data/global/track_data/phastcons/phastcons_chr1.bed.gz",
         "data/global/track_data/repeats/repeats.bed.gz",
-        "data/global/track_data/mappability/mappability.bed.gz",
-        "data/skin/track_data/methylation/methylation.bed.gz",
+        "data/global/track_data/mappability/mappability.bed.gz"
+        #"data/skin/track_data/methylation/methylation.bed.gz",
     output: "data/skin/dataframes/{model}/predictorDf.txt"
     threads: 10
     conda: "conda_createDF.yml"
@@ -274,6 +304,11 @@ rule liver_H3k36me3_downloadWrangle:
     output: "data/liver/track_data/H3k36me3/H3k36me3.bed.gz"
     conda: "conda_snakeSomMut_env.yml"
     shell: "bash analysis/modules/download_encode/test.sh liver H3k36me3 ENCFF376RWI.bigWig https://www.encodeproject.org/files/ENCFF376RWI/@@download/ENCFF376RWI.bigWig" 
+    
+rule liver_H3k27me3_downloadWrangle:
+    output: "data/liver/track_data/H3k27me3/H3k27me3.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/test.sh liver H3k27me3 ENCFF675TJR.bigWig https://www.encodeproject.org/files/ENCFF675TJR/@@download/ENCFF675TJR.bigWig" 
 
 rule liver_DNAse_downloadWrangle:
     output: "data/liver/track_data/DNAse/DNAse.bed.gz"
@@ -283,7 +318,8 @@ rule liver_DNAse_downloadWrangle:
 rule liver_transcription_downloadWrangle:
     output: "data/liver/track_data/transcription/transcription.bed.gz"
     conda: "conda_snakeSomMut_env.yml"
-    shell: "bash analysis/modules/download_encode/test_twoFiles.sh liver transcription ENCFF186YCU ENCFF112IXW https://www.encodeproject.org/files/ENCFF186YCU/@@download/ENCFF186YCU.bigWig https://www.encodeproject.org/files/ENCFF112IXW/@@download/ENCFF112IXW.bigWig"
+    shell: "bash analysis/modules/download_encode/test.sh liver transcription ENCFF167XOI.bigWig https://www.encodeproject.org/files/ENCFF167XOI/@@download/ENCFF167XOI.bigWig"
+
         
         
 #SKIN TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -297,6 +333,21 @@ rule skin_methylation_downloadWrangle:
     output: "data/skin/track_data/methylation/methylation.bed.gz"
     conda: "conda_snakeSomMut_env.yml"
     shell: "bash analysis/modules/download_encode/methylation_threeFilesCombine.sh skin ENCFF019FIO ENCFF221CNC ENCFF706NQD"
+    
+rule skin_DNAse_downloadWrangle:
+    output: "data/skin/track_data/DNAse/DNAse.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/test.sh skin DNAse ENCFF274UWU.bigWig https://www.encodeproject.org/files/ENCFF274UWU/@@download/ENCFF274UWU.bigWig"
+    
+rule skin_keratin_txn_downloadWrangle:
+    output: "data/skin/track_data/transcription/transcription_kerat.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/skin/track_data/transcription/skin_kerat_transcription_downloadWrangle.sh  skin transcription ENCFF798NJF.bigWig https://www.encodeproject.org/files/ENCFF798NJF/@@download/ENCFF798NJF.bigWig"
+    
+rule skin_fibro_txn_downloadWrangle:
+    output: "data/skin/track_data/transcription/transcription_fibro.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/skin/track_data/transcription/skin_fibro_transcription_downloadWrangle.sh skin transcription ENCFF693XEN.bigWig https://www.encodeproject.org/files/ENCFF693XEN/@@download/ENCFF693XEN.bigWig"
 
 
 #GERMLINE TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
@@ -316,12 +367,14 @@ rule germline_H3k27ac_download:
     shell: "bash analysis/germline/track_data/H3k27/germline_H3k27ac_downloadWrangle.sh" 
 
 rule germline_dnase_download:
-    output: "data/germline/track_data/DNAse/DNAse_male_hg18_sorted.bed.gz"
-    shell: "bash analysis/germline/track_data/DNAse/germline_dnase_downloadWrangle.sh" 
+    output: "data/germline/track_data/DNAse/DNAse.bed.gz"
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/test.sh germline DNAse ENCFF589CRI.bigWig https://www.encodeproject.org/files/ENCFF589CRI/@@download/ENCFF589CRI.bigWig" 
 
 rule germline_txn_download:
-    output: "data/germline/track_data/transcription/transcription_male_hg18_sorted.bed.gz",
-    shell: "bash analysis/germline/track_data/transcription/germline_transcription_downloadWrangle.sh" 
+    output: "data/germline/track_data/transcription/transcription.bed.gz",
+    conda: "conda_snakeSomMut_env.yml"
+    shell: "bash analysis/modules/download_encode/test_twoFiles.sh germline transcription ENCFF107KAD ENCFF725NOE https://www.encodeproject.org/files/ENCFF107KAD/@@download/ENCFF107KAD.bigWig  https://www.encodeproject.org/files/ENCFF725NOE/@@download/ENCFF725NOE.bigWig"
 
 
 #BLOOD TRACK RULES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -357,15 +410,13 @@ rule blood_methylation_downloadWrangle:
 
 rule blood_txn_downloadWrangle:
     output: "data/blood/track_data/transcription/transcription.bed.gz"
-    message: "use the encode_download script for blood txn. may take a while"
     conda: "conda_snakeSomMut_env.yml"
-    shell: "bash analysis/modules/download_encode/test.sh blood transcription ENCFF333QAU.bigWig https://www.encodeproject.org/files/ENCFF333QAU/@@download/ENCFF333QAU.bigWig"
+    shell: "bash analysis/modules/download_encode/test.sh blood transcription ENCFF056PFE.bigWig https://www.encodeproject.org/files/ENCFF056PFE/@@download/ENCFF056PFE.bigWig"
 
 rule blood_DNAse_downloadWrangle:
     output: "data/blood/track_data/DNAse/DNAse.bed.gz"
-    message: "use the encode_download script for blood txn. may take a while"
     conda: "conda_snakeSomMut_env.yml"
-    shell: "bash analysis/modules/download_encode/test.sh blood DNAse ENCFF850RIV.bigWig https://www.encodeproject.org/files/ENCFF850RIV/@@download/ENCFF850RIV.bigWig"       
+    shell: "bash analysis/modules/download_encode/test.sh blood DNAse ENCFF334MJA.bigWig https://www.encodeproject.org/files/ENCFF334MJA/@@download/ENCFF334MJA.bigWig"     
         
 rule blood_H3k27ac_downloadWrangle:
     output: "data/blood/track_data/H3k27ac/H3k27ac.bed.gz"

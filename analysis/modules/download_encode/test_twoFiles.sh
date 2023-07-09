@@ -1,10 +1,9 @@
 #first agrument = tissue 
 #second argument = predictor 
-#thir argument = filename1 
-#fourht argument =  filename 2
+#thir argument = filename1 --> no file ext (ie not .bigWig)
+#fourht argument =  filename 2 --> no file ext (ie not .bigWig)
 #fifth argument = web link to file1
 #sixth argument = web link to file 2 
-
 
 #download and convert file 1 
 wget $5 -P data/$1/track_data/$2/ -o data/$1/track_data/$2/$3_wget_output.txt
@@ -35,7 +34,7 @@ wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg18.over.cha
 # #liftvoer hg38-->19 
 data/applications/UCSC_genomeBrowser_Blat/liftOver data/$1/track_data/$2/$2_hg38.bed data/$1/track_data/$2/hg38ToHg19.over.chain.gz data/$1/track_data/$2/$2_hg19.bed  data/$1/track_data/$2/$2_unliftgedhg38.bed
 wc -l data/$1/track_data/$2/$2_hg19.bed
-rm data/$1/track_data/$2/$2_hg38.bed #removing the unused file
+rm data/$1/track_data/$2/$2_hg38*#removing the unused file --> first individual hg38, then the combined
 # # echo "19M rows lost in hg38-->hg19 liftover out of 218M"
 
 # #liftover hg19-->18 

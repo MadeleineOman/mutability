@@ -5,6 +5,11 @@ library(ggplot2)
 library(patchwork)
 library(tidyr)
 
+exclude_CpG = FALSE
+exclude_triplet= FALSE
+fullModel= FALSE
+equiv_toLowest= FALSE
+
 args = commandArgs(trailingOnly=TRUE)
 model_name = args[1]
 if ("_equiv_toLowest" %in% args){

@@ -21,19 +21,18 @@ if ("_exclude_TCX_CCX" %in% args){exclude_TCX_CCX=TRUE}
 if ("_exclude_triplet" %in% args){exclude_triplet=TRUE}
 
 # tissue = "liver"
-# model_name = "model8"
-# n_bootstrap = 0
-# equiv_toLowest=TRUE
+# model_name = "model9"
+n_bootstrap = 0
 
 
 tmp_file_path = ""
 
 model_desc_modify = ""
 
-if ("_fullModel" %in% args){model_desc_modify = paste(model_desc_modify,"_fullModel",sep="")}
 
 if (equiv_toLowest==TRUE){
-    model_desc_modify = paste(model_desc_modify,"_equiv_toLowest",sep="")}
+    model_desc_modify = paste(model_desc_modify,"_equiv_toLowest",sep="")}else{
+    model_desc_modify = paste(model_desc_modify,"_fullModel",sep="")}
 if (exclude_CpG==TRUE){
     all_data <-all_data[!str_detect(all_data$triplet,"CG"),]
     model_desc_modify = paste(model_desc_modify,"_noCpG",sep="")}

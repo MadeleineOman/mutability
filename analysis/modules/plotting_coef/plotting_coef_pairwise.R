@@ -1,8 +1,8 @@
 args = commandArgs(trailingOnly=TRUE)
-# tissue = "blood"
-# tissue_predOn = "skin"
-# model_name = "model8"
-equiv_toLowest=FALSE
+tissue = "blood"
+tissue_predOn = "skin"
+model_name = "model8"
+equiv_toLowest=TRUE
 exclude_triplet = FALSE
 exclude_CpG= FALSE
 
@@ -87,7 +87,7 @@ colors_ggplot <- c(sequence = "#7CAE00", triplet = "#C77CFF", global ='#F8766D',
 #plotting
 #  
 #writing some infor on how wel they match to file 
-error_output_file = paste(tmp_file_path,"analysis/global/plots/",model_name,"/coefScatter_",tissue,"_on_",tissue_predOn,"_textOutput",model_desc_modify,".txt",sep="")
+error_output_file = paste(tmp_file_path,"analysis/global/plots/",model_name,"/tStatScatter_",tissue,"_on_",tissue_predOn,"_textOutput",model_desc_modify,".txt",sep="")
 MAE = mean(abs(all_coefs$tissue_est - all_coefs$tissue_predOn_est),na.rm=TRUE)
 string_to_print = paste("mean absolute error is",round(MAE,4),sep=" ")
 cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
@@ -95,13 +95,7 @@ fit<-lm(tissue_est~tissue_predOn_est,data=all_coefs)
 string_to_print = paste("r-squared is",summary(fit)$r.squared,sep=" ")
 cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
 
-
-
-
-
-#plotting
-
-p1<-ggplot(all_sign_coefs, aes(y = tissue_est, x = tissue_predOn_est,label=name)) +
+p1<-ggplot(all_sign_coefs, aes(y = tissue_tStat, x = tissue_predOn_tStat,label=name)) +
     geom_point(aes(fill=type,color=type) )+
     theme_light()+
 #     scale_y_continuous(breaks=seq(-0.75,1.75,0.75)) +
@@ -110,8 +104,8 @@ p1<-ggplot(all_sign_coefs, aes(y = tissue_est, x = tissue_predOn_est,label=name)
     geom_abline(intercept=0, slope=0, col="cornflowerblue")+
     geom_vline(xintercept=0,col="cornflowerblue") + #http://www.sthda.com/english/wiki/ggplot2-add-straight-lines-to-a-plot-horizontal-vertical-and-regression-lines
     labs(
-        x = paste(tissue_predOn," coefficient values",sep=""),
-        y = paste(tissue," coefficient values",sep=""),
+        x = paste(tissue_predOn," T statistic values",sep=""),
+        y = paste(tissue," T statistic values",sep=""),
         color = "Predictor class"#https://stackoverflow.com/questions/14622421/how-to-change-legend-title-in-ggplot
         ) +
     theme(
@@ -121,19 +115,23 @@ p1<-ggplot(all_sign_coefs, aes(y = tissue_est, x = tissue_predOn_est,label=name)
     legend.text = element_text(size = 12, family = 'Helvetica')
     )  +
     scale_color_manual(values = colors_ggplot)+
-    geom_text(hjust=0, vjust=0,aes(color=type),size=2)#https://stackoverflow.com/questions/15624656/label-points-in-geom-point
-# ggsave(p1, paste(tmp_file_path,"analysis/global/plots/",model_name,"/coefScatter_",tissue,"_on_",tissue_predOn,"_onlySignCoefs_label",model_desc_modify,".pdf",sep=""))
-p2<-ggplot(all_sign_coefs, aes(y = tissue_est, x = tissue_predOn_est,label=name)) +
+    geom_text(hjust=0, vjust=0,aes(color=type),size=2)
+
+p2<-ggplot(all_sign_coefs, aes(y = tissue_tStat, x = tissue_predOn_tStat,label=name)) +
     geom_point(aes(fill=type,color=type) )+
     theme_light()+
+#     geom_segment(aes(x = 4 , xend = -4, y = 4,yend = 4),color="lightgrey",linetype="dashed") + #the box surrounding the 4 t stat 
+#     geom_segment(aes(x = 4 , xend = -4, y = -4,yend = -4),color="lightgrey",linetype="dashed") +
+#     geom_segment(aes(x = -4 , xend = -4, y = -4,yend = 4),color="lightgrey",linetype="dashed") +
+#     geom_segment(aes(x = 4 , xend = 4, y = -4,yend = 4),color="lightgrey",linetype="dashed") +
 #     scale_y_continuous(breaks=seq(-0.75,1.75,0.75)) +
 #     scale_x_continuous(breaks=seq(-0.75,1.75,0.75)) +
     geom_abline(intercept=0, slope=1, col="grey",linetype="dashed")+ #http://www.sthda.com/english/wiki/ggplot2-line-types-how-to-change-line-types-of-a-graph-in-r-software
     geom_abline(intercept=0, slope=0, col="cornflowerblue")+
     geom_vline(xintercept=0,col="cornflowerblue") + #http://www.sthda.com/english/wiki/ggplot2-add-straight-lines-to-a-plot-horizontal-vertical-and-regression-lines
     labs(
-        x = paste(tissue_predOn," coefficient values",sep=""),
-        y = paste(tissue," coefficient values",sep=""),
+        x = paste(tissue_predOn," T statistic values",sep=""),
+        y = paste(tissue," T statistic values",sep=""),
         color = "Predictor class"#https://stackoverflow.com/questions/14622421/how-to-change-legend-title-in-ggplot
         ) +
     theme(
@@ -142,17 +140,8 @@ p2<-ggplot(all_sign_coefs, aes(y = tissue_est, x = tissue_predOn_est,label=name)
     legend.title = element_text(size=12, family = 'Helvetica'),
     legend.text = element_text(size = 12, family = 'Helvetica')
     )  +
-    geom_pointrange(aes(ymin=tissue_est-tissue_stdErr, ymax=tissue_est+tissue_stdErr, color=type),alpha=0.4)+
-    geom_pointrange(aes(xmin=tissue_predOn_est-tissue_predOn_stdErr, xmax=tissue_predOn_est+tissue_predOn_stdErr, color=type),alpha=0.4)+
-    scale_color_manual(values = colors_ggplot)
-# ggsave(p2,paste(tmp_file_path,"analysis/global/plots/",model_name,"/coefScatter_",tissue,"_on_",tissue_predOn,"_onlySignCoefs",model_desc_modify,".pdf",sep=""))
+    scale_color_manual(values = colors_ggplot)#+
+
+
 p<-p1+p2
-ggsave(plot = p, width = 18, height = 10, dpi = 200, filename =paste(tmp_file_path,"analysis/global/plots/",model_name,"/coefScatter_",tissue,"_on_",tissue_predOn,"_onlySignCoefs",model_desc_modify,"_comb.pdf",sep=""))
-
-
-MAE = mean(abs(all_sign_coefs$tissue_est - all_sign_coefs$tissue_predOn_est),na.rm=TRUE)
-string_to_print = paste("mean absolute error is for sign coefs only ",round(MAE,4),sep=" ")
-cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
-fit<-lm(tissue_est~tissue_predOn_est,data=all_sign_coefs)
-string_to_print = paste("r-squared is for sign coefs only",summary(fit)$r.squared,sep=" ")
-cat(string_to_print,file=error_output_file,sep="\n",append=TRUE)
+ggsave(plot = p, width = 18, height = 10, dpi = 200, filename =paste(tmp_file_path,"analysis/global/plots/",model_name,"/tStatScatter_",tissue,"_on_",tissue_predOn,"_onlySignCoefs",model_desc_modify,"_comb.pdf",sep=""))

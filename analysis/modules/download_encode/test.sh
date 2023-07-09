@@ -3,6 +3,8 @@
 #thir argument = filename 
 #fourht argument = web link to file 
 
+touch data/$1/track_data/$2/wget_output.txt
+
 wget $4 -P data/$1/track_data/$2/ -o data/$1/track_data/$2/wget_output.txt
 
 #convert from bigwig to bed 

@@ -24,28 +24,58 @@ tmp_file_dir =""
 # command line input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 tissue = sys.argv[1]
-# tissue = "skin"
-model_desc = sys.argv[2]
-# model_desc = "model4"
+model_name = sys.argv[2]
 list_of_surrounding_contexts = json.loads(sys.argv[3]) #note if you chnagee/ increase this, then you oncrese the buffer zone (not using sites in the buffer, len(dna)-max_distance )
-# list_of_surrounding_contexts = [1,100,10000]
+if "_allTissueSpecTracks" in sys.argv: allTissueSpecTracks = True
+else: allTissueSpecTracks = False 
+
+# tissue = "skin"
+# model_name = "model8" 
+# list_of_surrounding_contexts = [0,100,10000]
+# allTissueSpecTracks = False
+
+model_desc=""
 
 if tissue == "germline": 
     mutations_lines = open(tmp_file_dir+'data/germline/mutation_data/mutations_hg18_final.bed').readlines()
     mutations_df = pd.read_table(tmp_file_dir+'data/germline/mutation_data/mutations_hg18_final.bed',sep="\t",header = None)
     mutations_df.columns = ["chromosome","start","fake_end","ref","alt","Fathers_age_at_conception","Mothers_age_at_conception"]
-elif tissue in ["blood","liver","skin"]:
+elif tissue in ["blood","liver"]:
     mutations_lines = open(tmp_file_dir+'data/{t}/mutations/mutations.bed'.format(t=tissue)).readlines()
     mutations_df = pd.read_table(tmp_file_dir+'data/{t}/mutations/mutations.bed'.format(t=tissue),sep="\t",header = None)
     mutations_df.columns = ["chromosome","start","fake_end","ref","alt","ID","VAF","Gene name", "Region", "AA", "COSMIC", "Species", "Gender", "Age_in_years",           
                             "Tissue/Cell type","Single-cell_genomics_biotechnology_or_Method","Control_sample_or_tissue"]
+elif tissue == "skin": 
+    mutations_lines = open(tmp_file_dir+'data/skin/mutations/SomaMutDB/mutations_0based.bed'.format(t=tissue)).readlines()
+    mutations_df = pd.read_table(tmp_file_dir+'data/skin/mutations/SomaMutDB/mutations_0based.bed'.format(t=tissue),sep="\t",header = None)
+    mutations_df.columns = ["chromosome","start","fake_end","ref","alt"]+list(mutations_df.columns)[5:]
 else: 
     print(tissue," tissue specified not yet supported  !!~~~!!!~~~~!!")
 
     
 
 #dictionry where i specify which col contains the information in the datafile , 0 indexed 
-tracksColFile_dict = json.load(open(tmp_file_dir+"data/{t}/objects/{m}/tracksColDict.txt".format(m=model_desc,t=tissue)))#  
+tracksColFile_dict = json.load(open(tmp_file_dir+"data/{t}/objects/{m}/tracksColDict.txt".format(m=model_name,t=tissue)))#  
+
+
+if allTissueSpecTracks == True: 
+    model_desc="_allTissueSpecTracks"
+    tissue_specific_tracknames = ["H3k27",'H3k4me3',"H3k4me1","H3k27me3","H3k36me3","DNAse","Transcription","methylation"]
+
+    for track in tissue_specific_tracknames: 
+        if tissue=="liver" and track=="H3k27me3":  continue
+        tracksColFile_dict[track+"_"+tissue] = tracksColFile_dict[track]
+        del tracksColFile_dict[track]
+
+    other_tissues = ["blood","skin","liver","germline"]
+    other_tissues.remove(tissue)
+
+    for other_tissue in other_tissues: 
+        other_tracksColDict = json.load(open(tmp_file_dir+"data/{t}/objects/{m}/tracksColDict.txt".format(m=model_name,t=other_tissue)))
+        for track in tissue_specific_tracknames: 
+            if not (other_tissue=="liver" and track=="H3k27me3"):
+                tracksColFile_dict[track+"_"+other_tissue] = other_tracksColDict[track]
+                
 
 
 #mutant sites ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,7 +102,7 @@ for line in (mutations_lines[1:]):
 
 #testing making usre the only sites that dont make it are sex chromosome mutations 
 timestamp = datetime.now().strftime("%Y_%m_%d")
-error_log = str("df created on "+timestamp)
+error_log = str("df created on "+timestamp+"\n")
 error_log+=(str(len(non_chrnMuts))+"  non chrN muts (ommited) from these lables: "+str(list(np.unique(non_chrnMuts)))+"\n")
 
 #add the sites infro from file 
@@ -141,6 +171,9 @@ header = "Chromosome"+ "\t"+"site"+"\t" +"triplet"+"\t"+"mutation_status"       
 for trackname in tracksColFile_dict.keys():   # the rest of the header is a function of tracks 
     if trackname in ["annotation","mappability","dist_rep_org_main","dist_rep_org_all","CpGisland"]: 
         header = header + "\t"+str(trackname)
+    elif  "methylation" in trackname:
+        for distance in list_of_surrounding_contexts: 
+            header = header + "\t"+str(trackname)+"_precent"+"-"+str(distance)+ "\t"+str(trackname)+"_coverage"+"-"+str(distance)
     else: 
         for distance in list_of_surrounding_contexts:                                                # and distance (need a col for every track and for every distance value within ) 
             header = header + "\t"+str(trackname)+"-"+str(distance)
@@ -149,14 +182,13 @@ for distance in list_of_surrounding_contexts:                                   
 header = header +"\n"                                                                            # obviously needs to end with a \n 
 
 
-filename_df = tmp_file_dir+'data/{a}/dataframes/{m}/predictorDf.txt'.format(a=tissue,m=model_desc)
+filename_df = tmp_file_dir+'data/{a}/dataframes/{m}/predictorDf{d}.txt'.format(a=tissue,m=model_name,d=model_desc)
 with open(filename_df,"w") as f: 
-    f.write(header)       
+    f.write(header)     
     
-# big function ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+#big boy function 
 def predictor_rowString(site): 
-# site = sites[52429]
-# for site in tqdm(sites[0:100]):
     row = []
     if site[1] <= distance_max or site[1]+distance_max >= fastas_dict[site[0]][1]:               # only use sites that will have values for site +- max distance (buffer). second element in fastas dict is the length 
         row.extend([str(site),"out of buffer range"])
@@ -179,7 +211,7 @@ def predictor_rowString(site):
             triplet= str(alignment[0,site[1]-1:site[1]+2].seq).upper()
             row.extend([triplet,0])
 
-        for trackname,track_val in tracksColFile_dict.items():                 
+        for trackname,track_val in tracksColFile_dict.items():    
             data_col = track_val[0] 
             global_or_tissue_specific = track_val[1]
             Na_is_0_or_NA = track_val[2]
@@ -211,39 +243,37 @@ def predictor_rowString(site):
                 if [record for record in pysam.Tabixfile(filename).fetch(site[0], site[1], site[1]+1)]: row.append("island")
                 elif closest_val.shortest_distance(site,filename) <= 2000: row.append("shore")
                 else: row.append("not")
-            elif trackname == "methylation": 
-                list_Cs_notInMethyl_data = []
+            elif "methylation" in trackname:
+                #########################################working below 
                 for distance in list_of_surrounding_contexts: 
-                    num_reads_list = []
-                    percent_methy_list = []
                     track_output = [record for record in pysam.Tabixfile(filename).fetch(site[0], site[1]-distance, site[1]+1+distance)]
                     if track_output: 
-                        if distance in [0,1]: 
-                            record_pres = False
-                            next_door = False
-                            for record in track_output: 
-                                if int(record.split("\t")[1]) == site[1]: 
-                                    record_pres =True
-                                    num_reads_at_site,percent_methylated = record.split("|")[6:8]
-                                    if int(num_reads_at_site)>=10: 
-                                        percent_methy_list.append(int(percent_methylated))
-                                elif int(record.split("\t")[1]) in [site[1]-1,site[1]+1]: next_door = True
-                            if not record_pres and next_door==False: #the track_output is empty
-#                                 row.append("weirdness")
-                                error_log += (("methylation track output empty",site[0]," ",str(site[1]),"\n"))
-                        else: 
-                            for record in track_output:
+                        num_reads_list,percent_methyl_list,next_door = [],[],False
+                        for record in track_output: 
+                            cur_site = int(record.split("\t")[1])
+                            if cur_site == site[1]: 
                                 num_reads_at_site,percent_methylated = record.split("|")[6:8]
-                                if int(num_reads_at_site) >=10 :
-                                    percent_methy_list.append(int(percent_methylated))
-                        if len(percent_methy_list) == 0: 
-                            row.append("noCoverage")
-                        else: 
-                            row.append(np.mean(percent_methy_list))
+                                if int(num_reads_at_site) >= 3: 
+                                    num_reads_list.append(int(num_reads_at_site))
+                                    percent_methyl_list.append(float(percent_methylated))
+                            elif cur_site in [site[1]-1,site[1]+1] and distance in [0,1]: next_door = True
+                        if num_reads_list: # if the list has eleemtns 
+                            row.extend([np.mean(percent_methyl_list),np.mean(num_reads_list)])
+                        else: # if the list is empty 
+                            if next_door==True: #if the only reason the result is empty is that there is nothing htere, but tabix grabbed it b/c next door 
+                                row.extend(["no_percent_data","no_coverage_data"])
+                            else: #the result is empty because all the returns had coverage less than 3 
+                                row.extend(["infsuff_coverage","infsuff_coverage"])
+                #         else: 
+                #             for record in track_output:
+                #                 num_reads_at_site,percent_methylated = record.split("|")[6:8]
+                #                 if int(num_reads_at_site) >= 3: 
+                #                     num_reads_list.append(int(num_reads_at_site))
+                #                     percent_methyl_list.append(float(percent_methylated))
+                #             row.extend([np.mean(percent_methyl_list),np.mean(num_reads_list)])
                     else: 
-                        if alignment[0][site[1]].upper() == "C": 
-                            list_Cs_notInMethyl_data.append(site)
-                        row.append("no_data")
+                        row.extend(["no_percent_data","no_coverage_data"])
+            ############################################################################working abovce
             else: 
                 for distance in list_of_surrounding_contexts: 
                     if not [record for record in pysam.Tabixfile(filename).fetch(site[0], site[1]-distance, site[1]+distance+1)]:                #if no value at that site 
@@ -268,7 +298,8 @@ def predictor_rowString(site):
                         elif tracksColFile_dict[trackname][0] == 'binary': 
                             row.append(len(track_output))
                         else: 
-                            row.append(((str(site)+" ERROR: track coloumns not 4 or 5 or binary: "+trackname)))
+                            row.append(((str(site)+"ERROR_track_coloumns_not_4_or_5_or_binary_"+trackname)))
+                            
 
         #sequence stuff                
         for distance in list_of_surrounding_contexts: 
@@ -292,11 +323,12 @@ def predictor_rowString(site):
     for i in range(0,len(row)): 
         row_string = row_string+str(row[i])+"\t"
     row_string = row_string.rstrip("\t") # dont need to add the "\n" here as it is added below int he f.write 
-#     row_string = row_string+"\n" 
-    return row_string
+    #     row_string = row_string+"\n" 
+    return(row_string)
+
 
 #WRITE THE MODEL #
-filename_df = tmp_file_dir+'data/{a}/dataframes/{m}/predictorDf.txt'.format(a=tissue,m=model_desc)
+filename_df = tmp_file_dir+'data/{a}/dataframes/{m}/predictorDf{d}.txt'.format(a=tissue,m=model_name,d=model_desc)
 start_time = time.time()
 print(tissue,"starting big loop")
 def rowString_handler():
@@ -311,5 +343,6 @@ if __name__=='__main__':
 error_log += (("creating the df loop took "+str(time.time()-start_time)[0:4]+" seconds\n"))
 
 #writing error log to file 
-with open(tmp_file_dir+"data/{a}/dataframes/{m}/predictorDf_errorlog.txt".format(a=tissue,m=model_desc),"w") as f: 
+with open(tmp_file_dir+"data/{a}/dataframes/{m}/predictorDf{d}_errorlog.txt".format(a=tissue,m=model_name,d=model_desc),"w") as f: 
       f.write(error_log)
+

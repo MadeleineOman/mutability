@@ -7,7 +7,7 @@ library(ggplot2)
 
 
 # tissue = "germline"
-# model_name = "model8"
+# model_name = "model9"
 equiv_toLowest=FALSE
 exclude_CpG=FALSE 
 exclude_triplet=FALSE
@@ -38,13 +38,85 @@ model_desc_modify = ""
 input_filePath = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/predictorDf",model_desc_modify,".txt",sep="")
 all_data <- read.table(input_filePath, header = TRUE,sep="\t")
 
-if ("_fullModel" %in% args){model_desc_modify = paste(model_desc_modify,"_fullModel",sep="")}
+#here we load in the mutation df so we can check the ref/triplet. also perfrom skin wrangling. 
+if (tissue == "germline"){
+    mutations_df = read.table(paste(tmp_file_path,'data/germline/mutation_data/mutations_hg18_final.bed',sep=""))
+    colnames(mutations_df) = c("Chromosome","site","site_fake_end","ref","alt","Fathers_age_at_conception","Mothers_age_at_conception")
+}else if(tissue %in% c("blood","liver")){
+    mutations_df = read.table(paste(tmp_file_path,'data/',tissue,'/mutations/mutations.bed',sep=""))
+    colnames(mutations_df )= c("Chromosome","site","site_fake_end","ref","alt","ID","VAF","Gene name", "Region", "AA", "COSMIC", "Species", "Gender", "Age_in_years",           
+                            "Tissue/Cell type","Single-cell_genomics_biotechnology_or_Method","Control_sample_or_tissue")
+}else if(tissue == "skin") {
+    mutations_df = read.table(paste(tmp_file_path,'data/skin/mutations/SomaMutDB/mutations_0based.bed',sep=""))
+    colnames(mutations_df) = c("Chromosome","site","site_fake_end","ref","alt","lab","subtissue")
+}else{ 
+    print(paste(tissue," tissue specified not yet supported  !!~~~!!!~~~~!!"))}
+
+#merging on the shared columns (chromosome and site) 
+all_data <- merge(x = all_data, y = mutations_df, all.x = TRUE)
+
+#MAKING SURE THE reference base matches the middle of the triplet (all tissues) 
+all_data$triplet_middle <- str_sub(all_data$triplet,2,2) 
+all_data_muts = filter(all_data,all_data$mutation_status==1)
+all_data_muts = filter(all_data_muts,nchar(all_data_muts$ref)==1)#removing the rows where the "ref" column has more than 1 element (deletion) 
+stopifnot(all_data_muts$triplet_middle == all_data_muts$ref)
+
+all_data <- all_data[,!(names(all_data) %in% c('site_fake_end','ref','alt',"triplet_middle","Fathers_age_at_conception","Mothers_age_at_conception",
+                                              "ID","VAF","Gene name", "Region", "AA", "COSMIC", "Species", "Gender", "Age_in_years",      
+                                            "Tissue/Cell type","Single-cell_genomics_biotechnology_or_Method","Control_sample_or_tissue"))]
+
+#skin txn wranfgling: two subtissue sto handle 
+if (tissue == "skin"){
+    #making sure only non mutant sites have NA in the subtissue column 
+    stopifnot(sum(all_data[!is.na(all_data$subtissue),]$mutation_status)==sum(all_data$mutation_status))
+    #extracting mut and non mut numbers  as well as fribro to kertino # within mutant sites 
+    n_nonMuts = sum(all_data$mutation_status==0)
+    n_Muts = sum(all_data$mutation_status==1)
+    n_fibro = sum(all_data$subtissue=="fibroblasts",na.rm=TRUE)
+    n_keratino = sum(all_data$subtissue=="keratinocytes",na.rm=TRUE)
+    #getting the number keratino/fibro there should be in the non-mut sites to match the ratio within the muts 
+    n_nonMuts_intoFibro = round(n_fibro*n_nonMuts/n_Muts)
+    n_nonMuts_intoKeratino = round(n_keratino*n_nonMuts/n_Muts)
+    stopifnot(n_nonMuts_intoFibro+ n_nonMuts_intoKeratino==n_nonMuts)
+    #extarcting the row indices of the non muts
+    nonMut_rowIndex <- c(1:nrow(all_data))[(is.na(all_data$subtissue))]
+    #selecting non mutant rows to be turned into firbroblasts 
+    nonMuts_rowIndex_intoFibro <- sort(sample(nonMut_rowIndex,size = n_nonMuts_intoFibro, replace =FALSE))
+    # turning the row indexses sampled into fibroblasts. turning the remining NA into keratinoctyes 
+    all_data$subtissue[nonMuts_rowIndex_intoFibro] <- "fibroblasts"
+    all_data$subtissue[is.na(all_data$subtissue)] <- "keratinocytes"
+    
+    #**ok so creating a column that is just transcription for skin**
+    #will be from the fibro or keratino column depending on the value in "subtissue" column
+    #https://stackoverflow.com/questions/48466652/combining-two-columns-conditionally-in-r
+    #https://www.sharpsightlabs.com/blog/case-when-r/
+    all_data <- all_data %>% mutate(Transcription.0=case_when(
+            subtissue=="fibroblasts" ~ Transcription_fibro.0,
+            TRUE ~ Transcription_kerat.0 ))
+    all_data <- all_data %>% mutate(Transcription.100=case_when(
+            subtissue=="fibroblasts" ~ Transcription_fibro.100,
+            TRUE ~ Transcription_kerat.100 ))
+    all_data <- all_data %>% mutate(Transcription.10000=case_when(
+            subtissue=="fibroblasts" ~ Transcription_fibro.10000,
+            TRUE ~ Transcription_kerat.10000 ))
+    #writing this df to the file before we remove columns (in case wqant o identify which lab came from etc )
+    write.csv(all_data,paste(tmp_file_path,"data/skin/dataframes/",model_name,"/skin_labSubtissue_DF.csv",sep=""), row.names=FALSE)
+    #removing colnames so standard like the rest of the tissues 
+    all_data <- all_data[,!(names(all_data) %in% c('Transcription_fibro.0','Transcription_fibro.100','Transcription_fibro.10000',
+                                                'Transcription_kerat.0','Transcription_kerat.100','Transcription_kerat.10000',
+                                               'lab','subtissue'))]
+    }
+
+
+
+
 
 if (equiv_toLowest==TRUE){
     blood_nrow = nrow(read.table(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/predictorDf",model_desc_modify,".txt",sep=""),header = TRUE,sep="\t"))
     all_data <-all_data[sample(nrow(all_data), blood_nrow), ]
-    model_desc_modify = paste(model_desc_modify,"_equiv_toLowest",sep="")}
-
+    model_desc_modify = paste(model_desc_modify,"_equiv_toLowest",sep="")}else{
+    model_desc_modify = paste(model_desc_modify,"_fullModel",sep="")}
+# if ("_fullModel" %in% args){model_desc_modify = paste(model_desc_modify,"_fullModel",sep="")}
 
 
 if (exclude_CpG==TRUE){
