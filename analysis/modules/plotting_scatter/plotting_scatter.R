@@ -130,7 +130,7 @@ ggplot(plotting_df, aes(x=average_predicted_probs, y=average_proportion_mutation
     geom_errorbarh(plotting_df, mapping=aes(xmin=stderr_lower, xmax =stderr_upper, y = average_proportion_mutations))+
     ggtitle(paste(tissue,"model on",tissue_predOn,sep=" ")) +
     theme(plot.title = element_text(size = 30, face = "bold",hjust = 0.5))
-filename = paste(tmp_pathToFiles,"analysis/",tissue,"/plots/",model_name,"/scatter_",tissue,"_on_",tissue_predOn, model_desc_modify,".pdf",sep="")
+filename = paste(tmp_pathToFiles,"analysis/",tissue,"/plots/",model_name,"/scatter_",tissue,"_on_",tissue_predOn, model_desc_modify,"_",bin_size_desiredMin,".pdf",sep="")
 ggsave(filename)
 
 #printing some information to file 

@@ -144,9 +144,9 @@ ggplot(coef_df_ordered_top10, aes(x = reorder(name, -abs(value)), y = value,fill
 ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_coef_barplot_top20",model_desc_modify,".pdf",sep=""))
 
 #NOW FOR THE T STATISTIC 
-ggplot(coef_df_ordered[coef_df_ordered$p_val<0.05,], aes(x = reorder(name, -value), y = t_stat,fill=type))+
+ggplot(coef_df_ordered[coef_df_ordered$p_val<0.05,], aes(x = reorder(name, -t_stat), y = t_stat,fill=type))+
     geom_bar(stat="identity")+
-    xlab(paste(tissue,"predictors ordered by coeficient value",sep=" "))+
+    xlab(paste(tissue,"predictors",sep=" "))+
     ylab("T statistic estimate of all significnat predictors ")+
     #https://www.tutorialspoint.com/how-to-display-negative-labels-below-bars-in-barplot-using-ggplot2-in-r
     geom_text(aes(y=t_stat+1*sign(t_stat),label=name),angle = 90,size=2)+#bars next to bar value 
@@ -154,44 +154,20 @@ ggplot(coef_df_ordered[coef_df_ordered$p_val<0.05,], aes(x = reorder(name, -valu
     theme(text = element_text(size=7),axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
 #     scale_fill_manual(values=c(orange_ggplot,"darkgrey", green_ggplot, blue_ggplot,purple_ggplot))
     scale_fill_manual(values=colors_ggplot)
- ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_tstat_barplot_all",model_desc_modify,".pdf",sep=""))
+ ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_tstat_barplot_all",model_desc_modify,"_0.05.pdf",sep=""))
+
+ggplot(coef_df_ordered[coef_df_ordered$p_val<0.01,], aes(x = reorder(name, -t_stat), y = t_stat,fill=type))+
+    geom_bar(stat="identity")+
+    xlab(paste(tissue,"predictors",sep=" "))+
+    ylab("T statistic estimate of all significnat predictors ")+
+    #https://www.tutorialspoint.com/how-to-display-negative-labels-below-bars-in-barplot-using-ggplot2-in-r
+    geom_text(aes(y=t_stat+1*sign(t_stat),label=name),angle = 90,size=2)+#bars next to bar value 
+    #geom_text(aes(y=-0.05*sign(mean_est),label=name),angle = 90,size=2)+#labels next to the bottom (0 line) of bars 
+    theme(text = element_text(size=7),axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+#     scale_fill_manual(values=c(orange_ggplot,"darkgrey", green_ggplot, blue_ggplot,purple_ggplot))
+    scale_fill_manual(values=colors_ggplot)
+ ggsave(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_tstat_barplot_all",model_desc_modify,"_0.01.pdf",sep=""))
 
 
 
-#CREATING MODELS FOR THE LIVER TISSUE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-if (tissue != "liver"){
-    all_data <- all_data[,!(names(all_data) %in% c("H3k27me3.10000"))]
-    #one whole model for 
-    model <- glm(mutation_status~., data=all_data[sample_sites_train,],family="binomial")
 
-    #saving the model variables 
-    filename = paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_forLiver_model",model_desc_modify,".RData", sep="") #model  
-    save(model, file=filename)
-    filename =paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_forLiver_samples_sites_test",model_desc_modify,".RData", sep="")#sample sites test 
-    save(sample_sites_test , file=filename)
-    filename =paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_forLiver_all_data_readyForPrediction",model_desc_modify,".csv", sep="")
-    write.csv(all_data,filename)
-
-    #analyze the coeficients~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    coefs <- coef(summary(model))
-    coef_df <- as.data.frame(coefs)
-    colnames(coef_df) <- c("value","std_err","z_val","p_val")
-    coef_df$t_stat <- coef_df$value/coef_df$std_err
-    coef_df<- tibble::rownames_to_column(coef_df, "name") # https://stackoverflow.com/questions/29511215/convert-row-names-into-first-column
-    coef_df_ordered <- coef_df[order(-coef_df$value),]#https://www.statmethods.net/management/sorting.html
-    filename = paste(tmp_file_path,"data/",tissue,"/dataframes/",model_name,"/",tissue,"_forLiver_coefDF",model_desc_modify,".csv",sep="")#this sep is for the filename string
-    write.csv(coef_df_ordered,filename,row.names=FALSE)
-
-    #MODEL DIAGNOSTICS 
-    #checing the assumptions.. though idk how to read 
-    pdf(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_forLiver_model_diagnostics",model_desc_modify,".pdf", sep=""))
-    plot(model)
-    dev.off() 
-    #checking for linearity one at a time... 
-    pdf(paste(tmp_file_path,"analysis/",tissue,"/plots/",model_name,"/",tissue,"_forLiver_model_diagnostics_checkingLinearity",model_desc_modify,".pdf", sep=""))
-    for (pred_name in colnames(all_data)){
-        plot(model$linear.predictors ~ all_data[sample_sites_train,][,pred_name],main=pred_name)
-    }
-    dev.off()    
-}   
-   

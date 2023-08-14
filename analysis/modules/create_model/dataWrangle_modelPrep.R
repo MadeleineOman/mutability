@@ -6,7 +6,7 @@ library(rlang)
 library(ggplot2)
 
 
-# tissue = "germline"
+# tissue = "liver"
 # model_name = "model9"
 equiv_toLowest=FALSE
 exclude_CpG=FALSE 
@@ -236,6 +236,7 @@ if (exclude_triplet==FALSE){
 all_data$annotation <- gsub("ignored","not_transcribed",all_data$annotation)
 all_data$annotation <- gsub("protein_binding","not_transcribed",all_data$annotation)#there are so few protein binding sites that we may as well omit 
 #rerplacing with "not_transcribed" is fine as they are the last level before non_transcribed in the annotation module 
+all_data$annotation <- gsub("regulatory","not_transcribed",all_data$annotation)
 
 #factorizing the columns 
 all_data$mutation_status <- as.factor(all_data$mutation_status)
@@ -314,7 +315,17 @@ for (cur_pred in num_cols){
 }
 dev.off()
 
+
 #making categorical columns into seperate numerical columns ready for standardizing 
+#first, making sure the right labels are kept for the categorical colums 
+all_data <- all_data %>% mutate(CpGIslandyes= case_when(CpGisland =="island" ~ 1,TRUE ~ 0))
+all_data <- all_data %>% mutate(CpGIslandshore= case_when(CpGisland =="shore" ~ 1,TRUE ~ 0))#tested to work 
+all_data <- all_data %>% mutate(annotation_transcribed= case_when(annotation =="transcribed" ~ 1,TRUE ~ 0))
+all_data <- all_data %>% mutate(annotation_UTR3= case_when(annotation =="UTR3" ~ 1,TRUE ~ 0))
+all_data <- all_data %>% mutate(annotation_UTR5= case_when(annotation =="UTR5" ~ 1,TRUE ~ 0))
+#removing the course columns 
+all_data <-  all_data[,!(names(all_data) %in% c("annotation","CpGisland"))]
+
 all_data$dummy <- 1#need a dumym column that the model.matrix can remove (as it has to remove a column aparently)
 muts_col <- all_data$mutation_status#saving the column of mutations so i can add it back later
 if (tissue=="global"){
@@ -327,6 +338,9 @@ all_data <-(data.frame((model.matrix(dummy~., all_data[, preds_to_standardize])[
 all_data$mutation_status <- muts_col
 if (tissue=="global"){
     all_data$tissue <- tissue_col}
+
+
+
 
 #print("standardizing")
 #STANDARDIZING~~~~~~~~~~~~~~~~~~~~~~~~~~~~

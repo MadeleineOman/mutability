@@ -36,18 +36,10 @@ if (exclude_triplet==TRUE){
     model_desc_modify = paste(model_desc_modify,"_noTriplets",sep="")}
 
 
-if ((tissue_predOn == "liver")&&(tissue != "liver")){
-    load(paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_forLiver_model",model_desc_modify,".RData",sep=""))#model
-}else{
-    load(paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_model",model_desc_modify,".RData",sep=""))#model
-}
-if ((tissue_predOn != "liver")&&(tissue == "liver")){
-    load(paste(tmp_file_path,"data/",tissue_predOn,"/objects/",model_name,"/",tissue_predOn,"_forLiver_samples_sites_test",model_desc_modify,".RData",sep=""))#sample_sites_test
-    all_data <- read.csv(paste(tmp_file_path,"data/",tissue_predOn,"/dataframes/",model_name,"/",tissue_predOn,"_forLiver_all_data_readyForPrediction",model_desc_modify,".csv",sep=""),header=TRUE)
-}else{
-    load(paste(tmp_file_path,"data/",tissue_predOn,"/objects/",model_name,"/",tissue_predOn,"_samples_sites_test",model_desc_modify,".RData",sep=""))#sample_sites_test
-    all_data <- read.csv(paste(tmp_file_path,"data/",tissue_predOn,"/dataframes/",model_name,"/",tissue_predOn,"_all_data_readyForPrediction",model_desc_modify,".csv",sep=""),header=TRUE)
-}
+load(paste(tmp_file_path,"data/",tissue,"/objects/",model_name,"/",tissue,"_model",model_desc_modify,".RData",sep=""))#model
+load(paste(tmp_file_path,"data/",tissue_predOn,"/objects/",model_name,"/",tissue_predOn,"_samples_sites_test",model_desc_modify,".RData",sep=""))#sample_sites_test
+all_data <- read.csv(paste(tmp_file_path,"data/",tissue_predOn,"/dataframes/",model_name,"/",tissue_predOn,"_all_data_readyForPrediction",model_desc_modify,".csv",sep=""),header=TRUE)
+
 
 
 

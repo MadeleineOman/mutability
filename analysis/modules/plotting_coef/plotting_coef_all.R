@@ -35,9 +35,9 @@ if (exclude_triplet==TRUE){model_desc_modify = paste(model_desc_modify,"_noTripl
 
 
 #load in the data 
-blood_coefs <- read.csv(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/blood_forLiver_coefDF",model_desc_modify,".csv",sep=""))
-germline_coefs <- read.csv(paste(tmp_file_path,"data/germline/dataframes/",model_name,"/germline_forLiver_coefDF",model_desc_modify,".csv",sep=""))
-skin_coefs <- read.csv(paste(tmp_file_path,"data/skin/dataframes/",model_name,"/skin_forLiver_coefDF",model_desc_modify,".csv",sep=""))
+blood_coefs <- read.csv(paste(tmp_file_path,"data/blood/dataframes/",model_name,"/blood_coefDF",model_desc_modify,".csv",sep=""))
+germline_coefs <- read.csv(paste(tmp_file_path,"data/germline/dataframes/",model_name,"/germline_coefDF",model_desc_modify,".csv",sep=""))
+skin_coefs <- read.csv(paste(tmp_file_path,"data/skin/dataframes/",model_name,"/skin_coefDF",model_desc_modify,".csv",sep=""))
 liver_coefs <- read.csv(paste(tmp_file_path,"data/liver/dataframes/",model_name,"/liver_coefDF",model_desc_modify,".csv",sep=""))
 
 #rename columns tp include the tissue in the colanme (for later merging)
