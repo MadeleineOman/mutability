@@ -14,3 +14,7 @@ To run the analyses with Snakemake, first install it in your shell:
 
 `mamba create -c conda-forge -c bioconda -n snakemake snakemake` to set up the mamba environment in which to run 
 
+Beyond this, all packages required for the analyses are managed by snakemake, listed explictly in the .yml files here. 
+
+Reach out if you have any questions! madeleine.oman@mail.utoronto.ca 
+
