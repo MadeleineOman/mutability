@@ -9,6 +9,8 @@ This is the repository that contains all the analyses and code used in the above
 the "Snakefile" file dictates the wrokflow, and contains all the rules and requirements explicitely. 
 
 To run the analyses with Snakemake, first install it in your shell: 
+
 `conda install -n mutability -c conda-forge mamba`replacing "mutability" with the environment you are working from. 
+
 `mamba create -c conda-forge -c bioconda -n snakemake snakemake` to set up the mamba environment in which to run 
 
